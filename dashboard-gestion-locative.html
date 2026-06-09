@@ -60,10 +60,13 @@
   }
   nav button:hover{color:var(--bleu);}
   nav button.actif{color:var(--bleu); border-bottom-color:var(--bleu); font-weight:600;}
-  .pastille{
-    background:var(--rouge); color:#fff; border-radius:10px; font-size:11.5px;
-    padding:1px 7px; font-weight:600; min-width:18px; text-align:center;
+  .badge-onglet{
+    background:var(--gris-fond); color:var(--texte-2); border-radius:10px; font-size:11.5px;
+    padding:1px 7px; font-weight:600; min-width:18px; text-align:center; line-height:1.5;
   }
+  nav button.actif .badge-onglet{background:var(--bleu-clair); color:var(--bleu);}
+  nav button.actif .badge-onglet-rouge, nav button .badge-onglet-rouge{background:var(--rouge); color:#fff;}
+  nav button.actif .badge-onglet-orange, nav button .badge-onglet-orange{background:var(--orange); color:#fff;}
   /* ---------- Contenu ---------- */
   main{max-width:1180px; margin:0 auto; padding:22px 28px 60px;}
   .vue{display:none;}
@@ -184,7 +187,6 @@
   }
   .selecteur-periode button.actif{background:var(--bleu); color:#fff;}
   /* ---------- Fiches, frise d'étapes, checklists, journal ---------- */
-  .pastille-orange{background:var(--orange);}
   .dlg-large{max-width:820px;}
   .section-fiche{border-top:1px solid var(--bord); margin-top:16px; padding-top:12px;}
   .section-fiche h4{margin:0 0 8px; font-size:12.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--texte-2);}
@@ -244,12 +246,14 @@
 </div>
 
 <nav>
-  <button data-vue="echeancier" class="actif">📋 Échéancier <span class="pastille" id="pastille-urgent" style="display:none">0</span></button>
-  <button data-vue="conges">📨 Congés locataires</button>
-  <button data-vue="arretes">💶 Arrêtés de compte</button>
-  <button data-vue="fins">📁 Fin de gestion</button>
-  <button data-vue="sinistres">🛠 Sinistres <span class="pastille pastille-orange" id="pastille-dormants" style="display:none" title="Sinistres sans action récente">0</span></button>
-  <button data-vue="devis">🧾 Devis</button>
+  <button data-vue="echeancier" class="actif">📋 Échéancier
+    <span class="badge-onglet" id="badge-echeancier" style="display:none" title="Échéances actives à traiter">0</span>
+    <span class="badge-onglet badge-onglet-rouge" id="badge-retard" style="display:none" title="Échéances en retard">0</span></button>
+  <button data-vue="conges">📨 Congés locataires <span class="badge-onglet" id="badge-conges" style="display:none" title="Dossiers non clôturés">0</span></button>
+  <button data-vue="arretes">💶 Arrêtés de compte <span class="badge-onglet" id="badge-arretes" style="display:none" title="Dépôts non restitués">0</span></button>
+  <button data-vue="fins">📁 Fin de gestion <span class="badge-onglet" id="badge-fins" style="display:none" title="Dossiers non soldés">0</span></button>
+  <button data-vue="sinistres">🛠 Sinistres <span class="badge-onglet" id="badge-sinistres" style="display:none" title="Sinistres non clôturés">0</span></button>
+  <button data-vue="devis">🧾 Devis <span class="badge-onglet" id="badge-devis" style="display:none" title="Devis en attente de réponse">0</span></button>
   <button data-vue="stats">📊 Mes stats</button>
 </nav>
 
@@ -916,7 +920,21 @@ function ouvrirDB(){
       });
       if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', {keyPath:'cle'});
     };
-    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onblocked = () => {
+      alert("Vos données sont encore ouvertes dans un autre onglet ou une autre fenêtre " +
+            "(probablement une ancienne version de ce fichier). Fermez les autres onglets " +
+            "de l'application puis rechargez cette page.");
+    };
+    req.onsuccess = (e) => {
+      db = e.target.result;
+      /* si une version plus récente du fichier est ouverte ailleurs, libérer la base */
+      db.onversionchange = () => {
+        db.close();
+        alert("L'application vient d'être ouverte dans une version plus récente dans un autre onglet. " +
+              "Fermez cet onglet et continuez dans le plus récent.");
+      };
+      resolve(db);
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -1218,12 +1236,6 @@ function rendreEcheancier(){
     archives.length ? archives.map(e => ligneEcheanceHTML(e, true)).join('')
                     : '<div class="vide">Aucune échéance archivée.</div>';
 
-  /* Pastille onglet : retard + aujourd'hui (sans filtres) */
-  const urgent = etat.echeances.filter(e => e.statut === 'active' && diffJours(e.dateEcheance) <= 0).length;
-  const past = document.getElementById('pastille-urgent');
-  past.style.display = urgent ? '' : 'none';
-  past.textContent = urgent;
-
   /* Filtre type : alimenter la liste des types existants */
   const types = [...new Set(etat.echeances.map(e => e.type))].sort();
   const sel = document.getElementById('filtre-type-ech');
@@ -1388,12 +1400,6 @@ function rendreSinistres(){
   const valeur = sel.value;
   sel.innerHTML = '<option value="">Toutes les compagnies</option>' +
     compagnies.map(c => '<option' + (c === valeur ? ' selected' : '') + '>' + echap(c) + '</option>').join('');
-
-  /* pastille des dossiers dormants (hors filtres) */
-  const dormants = etat.sinistres.filter(estDormant).length;
-  const past = document.getElementById('pastille-dormants');
-  past.style.display = dormants ? '' : 'none';
-  past.textContent = dormants;
 
   if (!liste.length){
     document.getElementById('liste-sinistres').innerHTML =
@@ -1651,6 +1657,33 @@ function rendreBandeau(){
   bandeau.classList.toggle('visible', visible);
 }
 
+/* ---------------- Badges des onglets ---------------- */
+function majBadge(id, n){
+  const el = document.getElementById(id);
+  el.style.display = n ? '' : 'none';
+  el.textContent = n;
+  return el;
+}
+/* Compteurs « en cours » de chaque onglet, recalculés après toute modification */
+function rendreBadgesNav(){
+  const actives = etat.echeances.filter(e => e.statut === 'active');
+  majBadge('badge-echeancier', actives.length);
+  const retard = actives.filter(e => diffJours(e.dateEcheance) < 0).length;
+  const br = majBadge('badge-retard', retard);
+  br.title = retard + ' échéance' + (retard > 1 ? 's' : '') + ' en retard';
+  majBadge('badge-conges', etat.conges.filter(c => c.statut !== 'cloture').length);
+  majBadge('badge-arretes', etat.arretes.filter(a => a.statut !== 'restitue').length);
+  majBadge('badge-fins', etat.finsGestion.filter(f => f.statut !== 'solde').length);
+  const dormants = etat.sinistres.filter(estDormant).length;
+  const bs = majBadge('badge-sinistres', etat.sinistres.filter(s => s.etape !== 'cloture').length);
+  bs.classList.toggle('badge-onglet-orange', dormants > 0);
+  bs.title = dormants
+    ? 'Sinistres non clôturés — dont ' + dormants + ' sans action récente'
+    : 'Sinistres non clôturés';
+  majBadge('badge-devis', etat.devis.filter(d =>
+    d.statut === 'demande' || d.statut === 'recu' || d.statut === 'propose').length);
+}
+
 /* ---------------- Rendu global ---------------- */
 function rendreTout(){
   rendreEcheancier();
@@ -1661,6 +1694,7 @@ function rendreTout(){
   rendreDevis();
   rendreStats();
   rendreBandeau();
+  rendreBadgesNav();
 }
 
 /* ---------------- Export / import ---------------- */
@@ -2471,11 +2505,11 @@ function initEvenements(){
       await sauverSinistre(s);
       await syncSinistre(s);
       rendreFicheSinistre();
-      rendreSinistres(); rendreEcheancier(); rendreBandeau();
+      rendreSinistres(); rendreEcheancier(); rendreBandeau(); rendreBadgesNav();
     } else if (cible.dataset.pieceSuppr != null){
       s.pieces.splice(Number(cible.dataset.pieceSuppr), 1);
       await sauverSinistre(s);
-      rendreFicheSinistre(); rendreSinistres();
+      rendreFicheSinistre(); rendreSinistres(); rendreBadgesNav();
     } else if (cible.id === 'sin-piece-btn'){
       const champ = document.getElementById('sin-piece-nouvelle');
       const libelle = champ.value.trim();
@@ -2484,7 +2518,7 @@ function initEvenements(){
       s.pieces.push({libelle, fait: false});
       champ.value = '';
       await sauverSinistre(s);
-      rendreFicheSinistre(); rendreSinistres();
+      rendreFicheSinistre(); rendreSinistres(); rendreBadgesNav();
     } else if (cible.id === 'sin-journal-btn'){
       const champ = document.getElementById('sin-journal-texte');
       const texte = champ.value.trim();
@@ -2493,7 +2527,7 @@ function initEvenements(){
       s.journal.push({date: new Date().toISOString(), texte});
       champ.value = '';
       await sauverSinistre(s);
-      rendreFicheSinistre(); rendreSinistres();
+      rendreFicheSinistre(); rendreSinistres(); rendreBadgesNav();
     } else if (cible.id === 'sin-devis-creer'){
       ouvrirDlgDevis(null, s.id);
     } else if (cible.dataset.ouvrirDevis){
@@ -2510,11 +2544,11 @@ function initEvenements(){
       s.etapes[cible.dataset.etape] = s.etapes[cible.dataset.etape] || {};
       s.etapes[cible.dataset.etape][cible.dataset.champ] = cible.value;
       await sauverSinistre(s);
-      rendreSinistres();
+      rendreSinistres(); rendreBadgesNav();
     } else if (cible.dataset.piece != null){
       s.pieces[Number(cible.dataset.piece)].fait = cible.checked;
       await sauverSinistre(s);
-      rendreFicheSinistre(); rendreSinistres();
+      rendreFicheSinistre(); rendreSinistres(); rendreBadgesNav();
     }
   });
   document.getElementById('form-sinistre').addEventListener('submit', () => { validerSinistre(); });
@@ -2593,8 +2627,14 @@ function initEvenements(){
     await ouvrirDB();
     await chargerEtat();
   } catch (err){
-    alert('Impossible d\'initialiser le stockage local du navigateur. ' +
-          'Vérifiez que vous n\'êtes pas en navigation privée.');
+    if (err && err.name === 'VersionError'){
+      alert("Ce fichier est une ANCIENNE version de l'application : vos données ont déjà été " +
+            "utilisées avec une version plus récente. Ouvrez le fichier le plus récent " +
+            "(et supprimez celui-ci pour éviter toute confusion).");
+    } else {
+      alert("Impossible d'initialiser le stockage local du navigateur. " +
+            "Vérifiez que vous n'êtes pas en navigation privée.");
+    }
     return;
   }
   initEvenements();
