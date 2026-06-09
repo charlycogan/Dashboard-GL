@@ -341,7 +341,7 @@
     </div>
     <div class="carte">
       <div id="liste-fins"></div>
-      <p class="note-bas">Une échéance est créée automatiquement à la date d'effet du mandat, ainsi que les relances intermédiaires demandées. Au passage en « Soldé », l'application propose d'ajouter une « perte de gestion » dans Mes stats (attrition).</p>
+      <p class="note-bas">Une échéance est créée automatiquement à la date d'effet du mandat, ainsi que les relances intermédiaires demandées. Chaque dossier compte automatiquement comme une « perte de gestion » dans Mes stats (attrition), sur la période de sa date d'effet.</p>
     </div>
   </section>
 
@@ -1493,8 +1493,8 @@ const KPIS = [
   {id:'edl_entree', titre:"États des lieux d'entrée réalisés", type:'compte', series:['edl_entree']},
   {id:'honoraires', titre:'Honoraires de vacation cumulés', type:'montant', series:['honoraires'],
    aide:'Visites patrimoniales et suivis de sinistres.'},
-  {id:'attrition', titre:'Attrition du portefeuille (solde net)', type:'net', series:['mandats', 'pertes'],
-   aide:'Mandats entrés − pertes de gestion.'},
+  {id:'attrition', titre:'Attrition du portefeuille (solde net)', type:'net', series:['mandats'],
+   aide:'Mandats entrés − pertes de gestion. Les pertes sont comptées automatiquement depuis l\'onglet Fin de gestion (une par dossier, à sa date d\'effet).'},
   {id:'digital', titre:'Locations 100 % digitales réalisées', type:'compte', series:['digital']}
 ];
 
@@ -1530,8 +1530,13 @@ function sommeSerie(serie, deb, fin){
     .filter(x => x.serie === serie && x.date >= deb && x.date <= fin)
     .reduce((acc, x) => acc + (Number(x.valeur) || 0), 0);
 }
+/* Les pertes de gestion ne se saisissent pas : chaque dossier de l'onglet
+   Fin de gestion compte pour une perte, rattachée à sa date d'effet. */
+function pertesGestion(deb, fin){
+  return etat.finsGestion.filter(f => f.dateEffet >= deb && f.dateEffet <= fin).length;
+}
 function valeurKpi(kpi, deb, fin){
-  if (kpi.type === 'net') return sommeSerie('mandats', deb, fin) - sommeSerie('pertes', deb, fin);
+  if (kpi.type === 'net') return sommeSerie('mandats', deb, fin) - pertesGestion(deb, fin);
   return sommeSerie(kpi.series[0], deb, fin);
 }
 function fmtCourt(v){
@@ -1580,8 +1585,8 @@ function rendreStats(){
     let detail = '';
     if (kpi.type === 'net'){
       detail = '<div class="sous-info" style="margin-top:2px">Mandats entrés : ' +
-        sommeSerie('mandats', deb, fin) + ' &nbsp;•&nbsp; Pertes de gestion : ' +
-        sommeSerie('pertes', deb, fin) + '</div>';
+        sommeSerie('mandats', deb, fin) + ' &nbsp;•&nbsp; Pertes de gestion (auto) : ' +
+        pertesGestion(deb, fin) + '</div>';
     }
 
     /* Historique : 6 dernières périodes */
@@ -1597,8 +1602,8 @@ function rendreStats(){
       saisie =
         '<div class="ligne-saisie">' +
         '<button class="btn btn-secondaire btn-petit" data-ajout="mandats" data-val="1">＋1 mandat entré</button>' +
-        '<button class="btn btn-secondaire btn-petit" data-ajout="pertes" data-val="1">＋1 perte de gestion</button>' +
-        '<button class="btn btn-secondaire btn-petit" data-annuler="mandats,pertes" title="Annuler la dernière saisie">↩</button>' +
+        '<button class="btn btn-secondaire btn-petit" data-annuler="mandats" title="Annuler la dernière saisie">↩</button>' +
+        '<span class="sous-info">Les pertes viennent de l\'onglet Fin de gestion.</span>' +
         '</div>';
     } else if (kpi.type === 'montant'){
       saisie =
@@ -1980,15 +1985,6 @@ function ouvrirDlgFin(f){
   document.getElementById('dlg-fin').showModal();
 }
 
-async function proposerPerteGestion(){
-  if (confirm('Fin de gestion soldée. Ajouter 1 « perte de gestion » dans Mes stats (attrition du portefeuille) ?')){
-    const entree = {id: uid(), serie: 'pertes', date: todayStr(), valeur: 1, creeLe: new Date().toISOString()};
-    etat.statsEntries.push(entree);
-    await dbEcrire('statsEntries', entree);
-    toast('Perte de gestion comptabilisée dans « Mes stats ».');
-  }
-}
-
 async function validerFin(){
   const proprietaire = document.getElementById('fg-f-proprietaire').value.trim();
   const adresse = document.getElementById('fg-f-adresse').value.trim();
@@ -2007,12 +2003,10 @@ async function validerFin(){
     relances: [...new Set(relances)].sort((a, b) => b - a),
     checklist: checklistFinTravail
   };
-  let f, soldee = false;
+  let f;
   if (finEnEdition){
     f = finEnEdition;
-    const statutAvant = f.statut;
     Object.assign(f, donnees, {statut: document.getElementById('fg-f-statut').value});
-    soldee = f.statut === 'solde' && statutAvant !== 'solde';
     toast('Fin de gestion modifiée.');
   } else {
     f = Object.assign({id: uid(), statut: 'a_traiter', creeLe: new Date().toISOString()}, donnees);
@@ -2021,7 +2015,6 @@ async function validerFin(){
   }
   await dbEcrire('finsGestion', f);
   await syncFinGestion(f);
-  if (soldee) await proposerPerteGestion();
   rendreTout();
 }
 
@@ -2432,11 +2425,9 @@ function initEvenements(){
     if (cible.dataset.statutFin){
       const f = etat.finsGestion.find(x => x.id === cible.dataset.statutFin);
       if (f){
-        const avant = f.statut;
         f.statut = cible.value;
         await dbEcrire('finsGestion', f);
         await syncFinGestion(f);
-        if (f.statut === 'solde' && avant !== 'solde') await proposerPerteGestion();
         rendreTout();
       }
     }
