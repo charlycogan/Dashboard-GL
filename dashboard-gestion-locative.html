@@ -254,6 +254,7 @@
   <button data-vue="fins">📁 Fin de gestion <span class="badge-onglet" id="badge-fins" style="display:none" title="Dossiers non soldés">0</span></button>
   <button data-vue="sinistres">🛠 Sinistres <span class="badge-onglet" id="badge-sinistres" style="display:none" title="Sinistres non clôturés">0</span></button>
   <button data-vue="devis">🧾 Devis <span class="badge-onglet" id="badge-devis" style="display:none" title="Devis en attente de réponse">0</span></button>
+  <button data-vue="saisies">📝 À saisir <span class="badge-onglet" id="badge-saisies" style="display:none" title="Éléments restant à saisir">0</span></button>
   <button data-vue="stats">📊 Mes stats</button>
 </nav>
 
@@ -402,6 +403,30 @@
     </div>
   </section>
 
+  <!-- ============ VUE À SAISIR ============ -->
+  <section class="vue" id="vue-saisies">
+    <div class="barre-outils">
+      <input type="search" id="recherche-saisie" placeholder="Rechercher (propriétaire, adresse, locataire)…">
+      <select id="filtre-type-saisie">
+        <option value="">Tous les types</option>
+        <option value="mandat">Nouveau mandat</option>
+        <option value="avenant">Avenant</option>
+        <option value="bail">Bail</option>
+      </select>
+      <select id="filtre-statut-saisie">
+        <option value="">Tous les statuts</option>
+        <option value="a_saisir">À saisir</option>
+        <option value="saisi">Saisi</option>
+      </select>
+      <div class="espace"></div>
+      <button class="btn" id="btn-nouvelle-saisie">＋ Nouvelle entrée</button>
+    </div>
+    <div class="carte">
+      <div id="liste-saisies"></div>
+      <p class="note-bas">Chaque entrée « À saisir » crée une échéance « Saisir … » dans l'échéancier (à J+3 après la réception), clôturée automatiquement au passage en « Saisi ». Les nouveaux mandats rentrés par moi alimentent automatiquement les mandats entrés de l'attrition (Mes stats), sur la période de leur date d'effet.</p>
+    </div>
+  </section>
+
   <!-- ============ VUE STATS ============ -->
   <section class="vue" id="vue-stats">
     <div class="barre-outils">
@@ -437,6 +462,7 @@
             <option>Fin de gestion</option>
             <option>Sinistre</option>
             <option>Devis</option>
+            <option>À saisir</option>
             <option>État des lieux</option>
             <option>Visite</option>
             <option>Administratif</option>
@@ -858,6 +884,79 @@
   </form>
 </dialog>
 
+<!-- ============ DIALOGUE À SAISIR ============ -->
+<dialog id="dlg-saisie">
+  <div class="dlg-tete" id="dlg-saisie-titre">Nouvelle entrée à saisir</div>
+  <form method="dialog" id="form-saisie">
+    <div class="dlg-corps">
+      <div class="deux-col">
+        <div class="champ">
+          <label for="sa-f-type">Type *</label>
+          <select id="sa-f-type">
+            <option value="mandat">Nouveau mandat</option>
+            <option value="avenant">Avenant</option>
+            <option value="bail">Bail</option>
+          </select>
+        </div>
+        <div class="champ">
+          <label for="sa-f-proprietaire">Propriétaire (mandant) *</label>
+          <input type="text" id="sa-f-proprietaire" required maxlength="120">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="sa-f-adresse">Adresse du lot *</label>
+          <input type="text" id="sa-f-adresse" required maxlength="160">
+        </div>
+        <div class="champ">
+          <label for="sa-f-locataire">Locataire (surtout pour les baux)</label>
+          <input type="text" id="sa-f-locataire" maxlength="120">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="sa-f-reception">Date de réception *</label>
+          <input type="date" id="sa-f-reception" required>
+        </div>
+        <div class="champ">
+          <label for="sa-f-effet">Date d'effet / d'entrée *</label>
+          <input type="date" id="sa-f-effet" required>
+          <div class="aide">Pour un mandat, cette date rattache le mandat entré à la bonne période dans Mes stats.</div>
+        </div>
+      </div>
+      <div class="deux-col" id="bloc-rentre-par">
+        <div class="champ">
+          <label for="sa-f-rentre">Mandat rentré par *</label>
+          <select id="sa-f-rentre">
+            <option value="moi">Moi</option>
+            <option value="autre">Quelqu'un d'autre</option>
+          </select>
+          <div class="aide">Seuls les mandats rentrés par moi comptent dans l'attrition.</div>
+        </div>
+        <div class="champ" id="champ-rentre-nom" style="display:none">
+          <label for="sa-f-rentre-nom">Nom (facultatif)</label>
+          <input type="text" id="sa-f-rentre-nom" maxlength="120">
+        </div>
+      </div>
+      <div class="champ">
+        <label for="sa-f-note">Note</label>
+        <textarea id="sa-f-note" rows="2" maxlength="500" placeholder="Précisions utiles à la saisie…"></textarea>
+      </div>
+      <div class="champ" id="champ-statut-saisie" style="display:none">
+        <label for="sa-f-statut">Statut</label>
+        <select id="sa-f-statut">
+          <option value="a_saisir">À saisir</option>
+          <option value="saisi">Saisi</option>
+        </select>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="button" class="btn btn-secondaire" data-fermer>Annuler</button>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="zone-toasts"></div>
 
 <script>
@@ -906,8 +1005,8 @@ function toast(msg){
 }
 
 /* ---------------- Base de données locale (IndexedDB) ---------------- */
-const NOM_DB = 'gestion-locative', VERSION_DB = 2;
-const MAGASINS = ['echeances', 'conges', 'arretes', 'statsEntries', 'finsGestion', 'sinistres', 'devis'];
+const NOM_DB = 'gestion-locative', VERSION_DB = 3;
+const MAGASINS = ['echeances', 'conges', 'arretes', 'statsEntries', 'finsGestion', 'sinistres', 'devis', 'saisies'];
 let db = null;
 
 function ouvrirDB(){
@@ -969,7 +1068,7 @@ function metaEcrire(cle, valeur){
 /* ---------------- État en mémoire ---------------- */
 const etat = {
   echeances: [], conges: [], arretes: [], statsEntries: [],
-  finsGestion: [], sinistres: [], devis: [], meta: {},
+  finsGestion: [], sinistres: [], devis: [], saisies: [], meta: {},
   granulariteStats: 'mois',
   voirArchives: false
 };
@@ -982,6 +1081,7 @@ async function chargerEtat(){
   etat.finsGestion = await dbTout('finsGestion');
   etat.sinistres = await dbTout('sinistres');
   etat.devis = await dbTout('devis');
+  etat.saisies = await dbTout('saisies');
   const lignesMeta = await dbTout('meta');
   etat.meta = {};
   lignesMeta.forEach(l => { etat.meta[l.cle] = l.valeur; });
@@ -1153,6 +1253,20 @@ async function syncDevis(d){
     type: 'Devis', dossier,
     dateEcheance: addDaysStr(d.dateProposition || todayStr(), delai),
     critique: false, sourceType: 'devis', sourceId: d.id
+  }, false);
+}
+
+/* ---- À saisir (mandats, avenants, baux) ---- */
+const LIBELLE_TYPE_SAISIE = {mandat:'Nouveau mandat', avenant:'Avenant', bail:'Bail'};
+const LIBELLE_STATUT_SAISIE = {a_saisir:'À saisir', saisi:'Saisi'};
+
+async function syncSaisie(s){
+  await ensureAuto('saisie:' + s.id + ':saisir', s.statut === 'a_saisir', {
+    titre: 'Saisir ' + LIBELLE_TYPE_SAISIE[s.type] + ' — ' + s.adresse,
+    type: 'À saisir',
+    dossier: s.proprietaire + ' — ' + s.adresse + (s.locataire ? ' (' + s.locataire + ')' : ''),
+    dateEcheance: addDaysStr(s.dateReception, 3),
+    critique: false, sourceType: 'saisie', sourceId: s.id
   }, false);
 }
 
@@ -1488,13 +1602,63 @@ function rendreDevis(){
     lignes + '</tbody></table>';
 }
 
+/* ---------------- Rendu : à saisir ---------------- */
+function rendreSaisies(){
+  const recherche = document.getElementById('recherche-saisie').value.trim().toLowerCase();
+  const fType = document.getElementById('filtre-type-saisie').value;
+  const fStatut = document.getElementById('filtre-statut-saisie').value;
+  const liste = etat.saisies
+    .filter(s => (!recherche || (s.proprietaire + ' ' + s.adresse + ' ' + (s.locataire || ''))
+                    .toLowerCase().includes(recherche)) &&
+                 (!fType || s.type === fType) &&
+                 (!fStatut || s.statut === fStatut))
+    .sort((a, b) => {
+      const sa = a.statut === 'saisi' ? 1 : 0, sb = b.statut === 'saisi' ? 1 : 0;
+      if (sa !== sb) return sa - sb;
+      return a.dateEffet.localeCompare(b.dateEffet);
+    });
+
+  if (!liste.length){
+    document.getElementById('liste-saisies').innerHTML =
+      '<div class="vide">Rien à saisir. Cliquez sur « ＋ Nouvelle entrée » pour ajouter un mandat, un avenant ou un bail.</div>';
+    return;
+  }
+  const lignes = liste.map(s => {
+    const rentre = s.type === 'mandat'
+      ? (s.rentrePar === 'moi'
+          ? '<span class="badge badge-vert">Moi</span>'
+          : '<span class="badge badge-statut">' + (s.rentreParNom ? echap(s.rentreParNom) : 'Quelqu\'un d\'autre') + '</span>')
+      : '—';
+    const options = Object.keys(LIBELLE_STATUT_SAISIE).map(x =>
+      '<option value="' + x + '"' + (s.statut === x ? ' selected' : '') + '>' + LIBELLE_STATUT_SAISIE[x] + '</option>').join('');
+    return '<tr>' +
+      '<td><span class="badge badge-type">' + LIBELLE_TYPE_SAISIE[s.type] + '</span>' +
+        (s.note ? '<div class="sous-info" title="' + echap(s.note) + '">' +
+          echap(s.note.length > 60 ? s.note.slice(0, 60) + '…' : s.note) + '</div>' : '') + '</td>' +
+      '<td><div class="nom-loc">' + echap(s.proprietaire) + '</div><div class="sous-info">' + echap(s.adresse) +
+        (s.locataire ? ' — ' + echap(s.locataire) : '') + '</div></td>' +
+      '<td>' + fmtDate(s.dateReception) + '</td>' +
+      '<td><strong>' + fmtDate(s.dateEffet) + '</strong></td>' +
+      '<td>' + rentre + '</td>' +
+      '<td><select data-statut-saisie="' + s.id + '">' + options + '</select></td>' +
+      '<td class="cell-actions">' +
+        '<button class="btn btn-secondaire btn-petit" data-modif-saisie="' + s.id + '">Modifier</button> ' +
+        '<button class="btn btn-danger btn-petit" data-suppr-saisie="' + s.id + '">Supprimer</button></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('liste-saisies').innerHTML =
+    '<table><thead><tr><th>Type</th><th>Propriétaire / lot</th><th>Reçu le</th>' +
+    '<th>Date d\'effet</th><th>Rentré par</th><th>Statut</th><th></th></tr></thead><tbody>' +
+    lignes + '</tbody></table>';
+}
+
 /* ---------------- Stats ---------------- */
 const KPIS = [
   {id:'edl_entree', titre:"États des lieux d'entrée réalisés", type:'compte', series:['edl_entree']},
   {id:'honoraires', titre:'Honoraires de vacation cumulés', type:'montant', series:['honoraires'],
    aide:'Visites patrimoniales et suivis de sinistres.'},
-  {id:'attrition', titre:'Attrition du portefeuille (solde net)', type:'net', series:['mandats'],
-   aide:'Mandats entrés − pertes de gestion. Les pertes sont comptées automatiquement depuis l\'onglet Fin de gestion (une par dossier, à sa date d\'effet).'},
+  {id:'attrition', titre:'Attrition du portefeuille (solde net)', type:'net', series:[],
+   aide:'Entièrement automatique : mandats entrés (onglet À saisir, rentrés par moi) − pertes de gestion (onglet Fin de gestion), chacun à sa date d\'effet.'},
   {id:'digital', titre:'Locations 100 % digitales réalisées', type:'compte', series:['digital']}
 ];
 
@@ -1530,13 +1694,18 @@ function sommeSerie(serie, deb, fin){
     .filter(x => x.serie === serie && x.date >= deb && x.date <= fin)
     .reduce((acc, x) => acc + (Number(x.valeur) || 0), 0);
 }
-/* Les pertes de gestion ne se saisissent pas : chaque dossier de l'onglet
-   Fin de gestion compte pour une perte, rattachée à sa date d'effet. */
+/* L'attrition ne se saisit pas : les pertes viennent des dossiers Fin de
+   gestion, les mandats entrés des entrées « Nouveau mandat » rentrées par
+   moi (onglet À saisir), chacun rattaché à sa date d'effet. */
 function pertesGestion(deb, fin){
   return etat.finsGestion.filter(f => f.dateEffet >= deb && f.dateEffet <= fin).length;
 }
+function mandatsEntres(deb, fin){
+  return etat.saisies.filter(s => s.type === 'mandat' && s.rentrePar === 'moi' &&
+    s.dateEffet >= deb && s.dateEffet <= fin).length;
+}
 function valeurKpi(kpi, deb, fin){
-  if (kpi.type === 'net') return sommeSerie('mandats', deb, fin) - pertesGestion(deb, fin);
+  if (kpi.type === 'net') return mandatsEntres(deb, fin) - pertesGestion(deb, fin);
   return sommeSerie(kpi.series[0], deb, fin);
 }
 function fmtCourt(v){
@@ -1584,8 +1753,8 @@ function rendreStats(){
 
     let detail = '';
     if (kpi.type === 'net'){
-      detail = '<div class="sous-info" style="margin-top:2px">Mandats entrés : ' +
-        sommeSerie('mandats', deb, fin) + ' &nbsp;•&nbsp; Pertes de gestion (auto) : ' +
+      detail = '<div class="sous-info" style="margin-top:2px">Mandats entrés (auto) : ' +
+        mandatsEntres(deb, fin) + ' &nbsp;•&nbsp; Pertes de gestion (auto) : ' +
         pertesGestion(deb, fin) + '</div>';
     }
 
@@ -1600,11 +1769,8 @@ function rendreStats(){
     let saisie;
     if (kpi.type === 'net'){
       saisie =
-        '<div class="ligne-saisie">' +
-        '<button class="btn btn-secondaire btn-petit" data-ajout="mandats" data-val="1">＋1 mandat entré</button>' +
-        '<button class="btn btn-secondaire btn-petit" data-annuler="mandats" title="Annuler la dernière saisie">↩</button>' +
-        '<span class="sous-info">Les pertes viennent de l\'onglet Fin de gestion.</span>' +
-        '</div>';
+        '<div class="ligne-saisie"><span class="sous-info">Aucune saisie : alimenté par les onglets ' +
+        '« À saisir » (mandats rentrés par moi) et « Fin de gestion » (pertes).</span></div>';
     } else if (kpi.type === 'montant'){
       saisie =
         '<div class="ligne-saisie">' +
@@ -1687,6 +1853,7 @@ function rendreBadgesNav(){
     : 'Sinistres non clôturés';
   majBadge('badge-devis', etat.devis.filter(d =>
     d.statut === 'demande' || d.statut === 'recu' || d.statut === 'propose').length);
+  majBadge('badge-saisies', etat.saisies.filter(s => s.statut === 'a_saisir').length);
 }
 
 /* ---------------- Rendu global ---------------- */
@@ -1697,6 +1864,7 @@ function rendreTout(){
   rendreFins();
   rendreSinistres();
   rendreDevis();
+  rendreSaisies();
   rendreStats();
   rendreBandeau();
   rendreBadgesNav();
@@ -1716,6 +1884,7 @@ async function exporterDonnees(){
       finsGestion: etat.finsGestion,
       sinistres: etat.sinistres,
       devis: etat.devis,
+      saisies: etat.saisies,
       meta: Object.keys(etat.meta).map(cle => ({cle, valeur: etat.meta[cle]}))
     }
   };
@@ -1755,6 +1924,7 @@ async function importerDonnees(fichier){
   for (const f of (d.finsGestion || [])) await dbEcrire('finsGestion', f);
   for (const s of (d.sinistres || [])) await dbEcrire('sinistres', s);
   for (const v of (d.devis || [])) await dbEcrire('devis', v);
+  for (const x of (d.saisies || [])) await dbEcrire('saisies', x);
   for (const l of (d.meta || [])) await dbEcrire('meta', l);
   await chargerEtat();
   rendreTout();
@@ -2224,6 +2394,67 @@ async function validerDevis(){
   if (sinistreEnEdition && document.getElementById('dlg-sinistre').open) rendreFicheSinistre();
 }
 
+/* ---------------- Dialogues : à saisir ---------------- */
+let saisieEnEdition = null;
+
+function majChampsSaisie(){
+  const type = document.getElementById('sa-f-type').value;
+  document.getElementById('bloc-rentre-par').style.display = type === 'mandat' ? '' : 'none';
+  document.getElementById('champ-rentre-nom').style.display =
+    (type === 'mandat' && document.getElementById('sa-f-rentre').value === 'autre') ? '' : 'none';
+}
+
+function ouvrirDlgSaisie(s){
+  saisieEnEdition = s || null;
+  document.getElementById('dlg-saisie-titre').textContent = s ? 'Modifier l\'entrée' : 'Nouvelle entrée à saisir';
+  document.getElementById('sa-f-type').value = s ? s.type : 'mandat';
+  document.getElementById('sa-f-proprietaire').value = s ? s.proprietaire : '';
+  document.getElementById('sa-f-adresse').value = s ? s.adresse : '';
+  document.getElementById('sa-f-locataire').value = s ? (s.locataire || '') : '';
+  document.getElementById('sa-f-reception').value = s ? s.dateReception : todayStr();
+  document.getElementById('sa-f-effet').value = s ? s.dateEffet : todayStr();
+  document.getElementById('sa-f-rentre').value = s ? (s.rentrePar || 'moi') : 'moi';
+  document.getElementById('sa-f-rentre-nom').value = s ? (s.rentreParNom || '') : '';
+  document.getElementById('sa-f-note').value = s ? (s.note || '') : '';
+  document.getElementById('champ-statut-saisie').style.display = s ? '' : 'none';
+  if (s) document.getElementById('sa-f-statut').value = s.statut;
+  majChampsSaisie();
+  document.getElementById('dlg-saisie').showModal();
+}
+
+async function validerSaisie(){
+  const proprietaire = document.getElementById('sa-f-proprietaire').value.trim();
+  const adresse = document.getElementById('sa-f-adresse').value.trim();
+  const reception = document.getElementById('sa-f-reception').value;
+  const effet = document.getElementById('sa-f-effet').value;
+  if (!proprietaire || !adresse || !reception || !effet) return;
+  const type = document.getElementById('sa-f-type').value;
+  const rentrePar = document.getElementById('sa-f-rentre').value;
+  const donnees = {
+    type, proprietaire, adresse,
+    locataire: document.getElementById('sa-f-locataire').value.trim(),
+    dateReception: reception,
+    dateEffet: effet,
+    rentrePar: type === 'mandat' ? rentrePar : null,
+    rentreParNom: (type === 'mandat' && rentrePar === 'autre')
+      ? document.getElementById('sa-f-rentre-nom').value.trim() : '',
+    note: document.getElementById('sa-f-note').value.trim()
+  };
+  let s;
+  if (saisieEnEdition){
+    s = saisieEnEdition;
+    Object.assign(s, donnees, {statut: document.getElementById('sa-f-statut').value});
+    toast('Entrée modifiée.');
+  } else {
+    s = Object.assign({id: uid(), statut: 'a_saisir', creeLe: new Date().toISOString()}, donnees);
+    etat.saisies.push(s);
+    toast(LIBELLE_TYPE_SAISIE[type] + ' ajouté à la liste « À saisir ». Échéance créée.');
+  }
+  await dbEcrire('saisies', s);
+  await syncSaisie(s);
+  rendreTout();
+}
+
 /* ---------------- Événements ---------------- */
 function initEvenements(){
   /* Navigation */
@@ -2581,6 +2812,43 @@ function initEvenements(){
   });
   document.getElementById('dv-f-statut').addEventListener('change', majChampProposition);
   document.getElementById('form-devis').addEventListener('submit', () => { validerDevis(); });
+
+  /* À saisir */
+  ['recherche-saisie', 'filtre-type-saisie', 'filtre-statut-saisie'].forEach(id =>
+    document.getElementById(id).addEventListener('input', rendreSaisies));
+  document.getElementById('btn-nouvelle-saisie').addEventListener('click', () => ouvrirDlgSaisie(null));
+  document.getElementById('vue-saisies').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.modifSaisie){
+      const s = etat.saisies.find(x => x.id === cible.dataset.modifSaisie);
+      if (s) ouvrirDlgSaisie(s);
+    } else if (cible.dataset.supprSaisie){
+      const s = etat.saisies.find(x => x.id === cible.dataset.supprSaisie);
+      if (s && confirm('Supprimer « ' + LIBELLE_TYPE_SAISIE[s.type] + ' — ' + s.adresse +
+                       ' » ? L\'échéance liée sera aussi supprimée et les stats recalculées.')){
+        etat.saisies = etat.saisies.filter(x => x.id !== s.id);
+        await dbSupprimer('saisies', s.id);
+        await supprimerEcheancesLiees(s.id);
+        rendreTout();
+      }
+    }
+  });
+  document.getElementById('vue-saisies').addEventListener('change', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.statutSaisie){
+      const s = etat.saisies.find(x => x.id === cible.dataset.statutSaisie);
+      if (s){
+        s.statut = cible.value;
+        await dbEcrire('saisies', s);
+        await syncSaisie(s);
+        if (s.statut === 'saisi') toast('Entrée saisie : l\'échéance a été archivée.');
+        rendreTout();
+      }
+    }
+  });
+  document.getElementById('sa-f-type').addEventListener('change', majChampsSaisie);
+  document.getElementById('sa-f-rentre').addEventListener('change', majChampsSaisie);
+  document.getElementById('form-saisie').addEventListener('submit', () => { validerSaisie(); });
 
   /* Dialogues : boutons Annuler */
   document.querySelectorAll('dialog [data-fermer]').forEach(b =>
