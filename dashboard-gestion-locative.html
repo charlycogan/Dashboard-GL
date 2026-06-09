@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestion locative — Mon tableau de bord</title>
+<style>
+  :root{
+    --bleu:#1f4e79; --bleu-clair:#eaf1f8; --bleu-vif:#2e6da4;
+    --fond:#f3f4f6; --carte:#ffffff; --bord:#e2e5ea;
+    --texte:#1f2937; --texte-2:#6b7280;
+    --rouge:#b3261e; --rouge-fond:#fdecea;
+    --orange:#b45309; --orange-fond:#fef3e2;
+    --vert:#1a7f4b; --vert-fond:#e6f4ec;
+    --gris-fond:#eef0f3;
+    --ambre-fond:#fff7e0; --ambre-bord:#e6c878; --ambre-texte:#7a5c00;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+    background:var(--fond); color:var(--texte); font-size:15px; line-height:1.45;
+  }
+  /* ---------- En-tête ---------- */
+  header{
+    background:var(--bleu); color:#fff; padding:14px 28px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  header h1{font-size:19px; margin:0; font-weight:600; letter-spacing:.2px;}
+  header .sous-titre{font-size:12.5px; opacity:.8;}
+  .actions-haut{display:flex; gap:10px; align-items:center;}
+  .btn{
+    border:1px solid transparent; border-radius:6px; padding:8px 14px; font-size:14px;
+    cursor:pointer; background:var(--bleu-vif); color:#fff; font-family:inherit;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn-blanc{background:#fff; color:var(--bleu); border-color:#fff;}
+  .btn-blanc:hover{background:#f0f4f9;}
+  .btn-secondaire{background:#fff; color:var(--bleu); border-color:var(--bord);}
+  .btn-secondaire:hover{background:var(--bleu-clair);}
+  .btn-danger{background:#fff; color:var(--rouge); border-color:var(--bord);}
+  .btn-danger:hover{background:var(--rouge-fond);}
+  .btn-petit{padding:4px 9px; font-size:12.5px; border-radius:5px;}
+  /* ---------- Bandeau sauvegarde ---------- */
+  #bandeau-sauvegarde{
+    display:none; background:var(--ambre-fond); border-bottom:1px solid var(--ambre-bord);
+    color:var(--ambre-texte); padding:8px 28px; font-size:13.5px;
+    align-items:center; gap:12px; justify-content:center;
+  }
+  #bandeau-sauvegarde.visible{display:flex;}
+  /* ---------- Navigation ---------- */
+  nav{
+    background:#fff; border-bottom:1px solid var(--bord); padding:0 28px;
+    display:flex; gap:4px; flex-wrap:wrap;
+  }
+  nav button{
+    background:none; border:none; border-bottom:3px solid transparent;
+    padding:13px 16px 10px; font-size:14.5px; cursor:pointer; color:var(--texte-2);
+    font-family:inherit; display:flex; align-items:center; gap:7px;
+  }
+  nav button:hover{color:var(--bleu);}
+  nav button.actif{color:var(--bleu); border-bottom-color:var(--bleu); font-weight:600;}
+  .pastille{
+    background:var(--rouge); color:#fff; border-radius:10px; font-size:11.5px;
+    padding:1px 7px; font-weight:600; min-width:18px; text-align:center;
+  }
+  /* ---------- Contenu ---------- */
+  main{max-width:1180px; margin:0 auto; padding:22px 28px 60px;}
+  .vue{display:none;}
+  .vue.active{display:block;}
+  .barre-outils{
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .barre-outils input[type=search], .barre-outils select{
+    padding:8px 10px; border:1px solid var(--bord); border-radius:6px; font-size:14px;
+    background:#fff; font-family:inherit;
+  }
+  .barre-outils input[type=search]{min-width:240px;}
+  .espace{flex:1;}
+  .carte{
+    background:var(--carte); border:1px solid var(--bord); border-radius:10px;
+    padding:16px 18px; margin-bottom:16px;
+  }
+  .titre-bloc{
+    font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;
+    margin:0 0 10px; display:flex; align-items:center; gap:8px;
+  }
+  .compteur{font-weight:500; color:var(--texte-2); font-size:13px; text-transform:none; letter-spacing:0;}
+  .titre-retard{color:var(--rouge);}
+  .titre-jour{color:var(--bleu);}
+  .titre-semaine{color:var(--orange);}
+  .titre-plustard{color:var(--texte-2);}
+  .vide{color:var(--texte-2); font-size:13.5px; font-style:italic; padding:4px 0;}
+  /* ---------- Lignes d'échéance ---------- */
+  .ligne-echeance{
+    display:flex; align-items:center; gap:12px; padding:9px 6px;
+    border-bottom:1px solid var(--gris-fond);
+  }
+  .ligne-echeance:last-child{border-bottom:none;}
+  .ligne-echeance input[type=checkbox]{width:18px; height:18px; cursor:pointer; flex-shrink:0;}
+  .ech-infos{flex:1; min-width:0;}
+  .ech-titre{font-weight:600; font-size:14.5px;}
+  .ech-dossier{font-size:13px; color:var(--texte-2); margin-top:1px;}
+  .ech-droite{display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;}
+  .ech-date{font-size:13.5px; color:var(--texte); min-width:88px; text-align:right;}
+  .ech-date small{display:block; color:var(--texte-2); font-size:11.5px;}
+  .badge{
+    display:inline-block; font-size:11.5px; font-weight:600; border-radius:5px;
+    padding:2px 8px; white-space:nowrap;
+  }
+  .badge-type{background:var(--bleu-clair); color:var(--bleu);}
+  .badge-haute{background:var(--rouge-fond); color:var(--rouge);}
+  .badge-moyenne{background:var(--orange-fond); color:var(--orange);}
+  .badge-basse{background:var(--gris-fond); color:var(--texte-2);}
+  .badge-statut{background:var(--gris-fond); color:var(--texte-2);}
+  .badge-vert{background:var(--vert-fond); color:var(--vert);}
+  /* ---------- Tableaux modules ---------- */
+  table{width:100%; border-collapse:collapse; font-size:14px;}
+  th{
+    text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.4px;
+    color:var(--texte-2); font-weight:600; padding:8px 10px; border-bottom:2px solid var(--bord);
+  }
+  td{padding:9px 10px; border-bottom:1px solid var(--gris-fond); vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  td select{
+    padding:5px 7px; border:1px solid var(--bord); border-radius:5px; font-size:13px;
+    background:#fff; font-family:inherit; cursor:pointer;
+  }
+  .cell-actions{white-space:nowrap; text-align:right;}
+  .nom-loc{font-weight:600;}
+  .sous-info{font-size:12.5px; color:var(--texte-2);}
+  /* ---------- Formulaires / dialogues ---------- */
+  dialog{
+    border:none; border-radius:12px; padding:0; max-width:560px; width:92vw;
+    box-shadow:0 12px 40px rgba(0,0,0,.25);
+  }
+  dialog::backdrop{background:rgba(15,23,42,.45);}
+  .dlg-tete{
+    background:var(--bleu); color:#fff; padding:14px 22px; font-size:16px; font-weight:600;
+    border-radius:12px 12px 0 0;
+  }
+  .dlg-corps{padding:18px 22px;}
+  .dlg-pied{
+    padding:14px 22px; border-top:1px solid var(--bord); display:flex;
+    justify-content:flex-end; gap:10px;
+  }
+  .champ{margin-bottom:13px;}
+  .champ label{display:block; font-size:13px; font-weight:600; margin-bottom:4px; color:var(--texte);}
+  .champ input[type=text], .champ input[type=date], .champ input[type=number],
+  .champ select, .champ textarea{
+    width:100%; padding:8px 10px; border:1px solid var(--bord); border-radius:6px;
+    font-size:14px; font-family:inherit; background:#fff;
+  }
+  .champ .aide{font-size:12px; color:var(--texte-2); margin-top:3px;}
+  .deux-col{display:grid; grid-template-columns:1fr 1fr; gap:0 14px;}
+  .champ-coche{display:flex; align-items:center; gap:8px; margin-bottom:13px;}
+  .champ-coche input{width:17px; height:17px;}
+  .champ-coche label{font-size:14px; cursor:pointer;}
+  /* ---------- Stats ---------- */
+  .grille-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px;}
+  .kpi-titre{font-size:15px; font-weight:600; margin:0 0 2px;}
+  .kpi-valeur{font-size:26px; font-weight:700; color:var(--bleu);}
+  .kpi-valeur small{font-size:14px; font-weight:500; color:var(--texte-2);}
+  .jauge{background:var(--gris-fond); border-radius:6px; height:10px; overflow:hidden; margin:8px 0 4px;}
+  .jauge > div{height:100%; background:var(--bleu-vif); border-radius:6px; transition:width .3s;}
+  .jauge > div.atteint{background:var(--vert);}
+  .ligne-objectif{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--texte-2); margin-top:8px;}
+  .ligne-objectif input{
+    width:90px; padding:4px 7px; border:1px solid var(--bord); border-radius:5px; font-size:13px;
+  }
+  .ligne-saisie{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap;}
+  .ligne-saisie input{
+    width:90px; padding:6px 8px; border:1px solid var(--bord); border-radius:5px; font-size:13.5px;
+  }
+  .chart{width:100%; height:auto; margin-top:12px; display:block;}
+  .chart .bar{fill:var(--bleu-vif); opacity:.85;}
+  .chart .bar-neg{fill:var(--rouge); opacity:.8;}
+  .chart-lbl{font-size:9px; fill:var(--texte-2); text-anchor:middle; font-family:inherit;}
+  .chart-val{font-size:9px; fill:var(--texte); text-anchor:middle; font-weight:600; font-family:inherit;}
+  .selecteur-periode{display:inline-flex; border:1px solid var(--bord); border-radius:7px; overflow:hidden; background:#fff;}
+  .selecteur-periode button{
+    border:none; background:none; padding:7px 16px; font-size:13.5px; cursor:pointer;
+    font-family:inherit; color:var(--texte-2);
+  }
+  .selecteur-periode button.actif{background:var(--bleu); color:#fff;}
+  /* ---------- Divers ---------- */
+  #zone-toasts{position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:100;}
+  .toast{
+    background:#1f2937; color:#fff; padding:10px 16px; border-radius:8px; font-size:13.5px;
+    box-shadow:0 4px 14px rgba(0,0,0,.3); animation:apparait .2s ease-out;
+  }
+  @keyframes apparait{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
+  .lien-archives{background:none; border:none; color:var(--bleu); cursor:pointer; font-size:13.5px; text-decoration:underline; font-family:inherit;}
+  .note-bas{font-size:12.5px; color:var(--texte-2); margin-top:10px;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Gestion locative — Mon tableau de bord</h1>
+    <div class="sous-titre">Vos échéances et dossiers, en un coup d'œil. Données conservées uniquement sur ce poste.</div>
+  </div>
+  <div class="actions-haut">
+    <button class="btn btn-blanc" id="btn-exporter">⬇ Exporter la sauvegarde</button>
+    <button class="btn btn-blanc" id="btn-importer">⬆ Importer une sauvegarde</button>
+    <input type="file" id="fichier-import" accept=".json,application/json" style="display:none">
+  </div>
+</header>
+
+<div id="bandeau-sauvegarde">
+  <span id="texte-bandeau">💾 Pensez à sauvegarder vos données : aucune exportation récente.</span>
+  <button class="btn btn-petit" id="btn-export-bandeau">Exporter maintenant</button>
+</div>
+
+<nav>
+  <button data-vue="echeancier" class="actif">📋 Échéancier <span class="pastille" id="pastille-urgent" style="display:none">0</span></button>
+  <button data-vue="conges">📨 Congés locataires</button>
+  <button data-vue="arretes">💶 Arrêtés de compte</button>
+  <button data-vue="stats">📊 Mes stats</button>
+</nav>
+
+<main>
+
+  <!-- ============ VUE ÉCHÉANCIER ============ -->
+  <section class="vue active" id="vue-echeancier">
+    <div class="barre-outils">
+      <input type="search" id="recherche-ech" placeholder="Rechercher (intitulé, locataire, adresse)…">
+      <select id="filtre-type-ech">
+        <option value="">Tous les types</option>
+      </select>
+      <select id="filtre-priorite-ech">
+        <option value="">Toutes les priorités</option>
+        <option value="haute">Priorité haute</option>
+        <option value="moyenne">Priorité moyenne</option>
+        <option value="basse">Priorité basse</option>
+      </select>
+      <div class="espace"></div>
+      <button class="lien-archives" id="btn-voir-archives">Voir les échéances archivées</button>
+      <button class="btn" id="btn-nouvelle-echeance">＋ Nouvelle échéance</button>
+    </div>
+
+    <div id="liste-echeances"></div>
+
+    <div id="bloc-archives" style="display:none">
+      <div class="carte">
+        <h2 class="titre-bloc">🗄 Échéances archivées <span class="compteur" id="cpt-archives"></span></h2>
+        <div id="liste-archives"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VUE CONGÉS ============ -->
+  <section class="vue" id="vue-conges">
+    <div class="barre-outils">
+      <input type="search" id="recherche-conge" placeholder="Rechercher un locataire ou une adresse…">
+      <select id="filtre-statut-conge">
+        <option value="">Tous les statuts</option>
+        <option value="recu">Reçu</option>
+        <option value="edl_planifie">EDL de sortie planifié</option>
+        <option value="parti">Locataire parti</option>
+        <option value="cloture">Clôturé</option>
+      </select>
+      <div class="espace"></div>
+      <button class="btn" id="btn-nouveau-conge">＋ Nouveau congé</button>
+    </div>
+    <div class="carte">
+      <div id="liste-conges"></div>
+      <p class="note-bas">À la création d'un congé, une échéance « Planifier l'EDL de sortie » est ajoutée automatiquement à l'échéancier. Lorsque le statut passe à « Locataire parti », une échéance « Démarrer l'arrêté de compte » est créée.</p>
+    </div>
+  </section>
+
+  <!-- ============ VUE ARRÊTÉS ============ -->
+  <section class="vue" id="vue-arretes">
+    <div class="barre-outils">
+      <input type="search" id="recherche-arrete" placeholder="Rechercher un locataire ou une adresse…">
+      <select id="filtre-statut-arrete">
+        <option value="">Tous les statuts</option>
+        <option value="a_traiter">À traiter</option>
+        <option value="en_cours">En cours</option>
+        <option value="restitue">Restitué</option>
+      </select>
+      <div class="espace"></div>
+      <button class="btn" id="btn-nouvel-arrete">＋ Nouvel arrêté de compte</button>
+    </div>
+    <div class="carte">
+      <div id="liste-arretes"></div>
+      <p class="note-bas">Une alerte « Préparer la restitution du dépôt de garantie » est ajoutée automatiquement à l'échéancier quelques jours avant la date limite (délai réglable dossier par dossier).</p>
+    </div>
+  </section>
+
+  <!-- ============ VUE STATS ============ -->
+  <section class="vue" id="vue-stats">
+    <div class="barre-outils">
+      <span style="font-size:14px; color:var(--texte-2)">Période :</span>
+      <div class="selecteur-periode" id="selecteur-periode">
+        <button data-gran="mois" class="actif">Mois</button>
+        <button data-gran="trimestre">Trimestre</button>
+        <button data-gran="annee">Année</button>
+      </div>
+      <span id="libelle-periode" style="font-size:14px; font-weight:600; color:var(--bleu)"></span>
+    </div>
+    <div class="grille-stats" id="grille-stats"></div>
+    <p class="note-bas">Chaque saisie est datée du jour : les totaux et l'historique se recalculent automatiquement selon la période choisie. Les objectifs sont propres à chaque période (mois, trimestre, année).</p>
+  </section>
+
+</main>
+
+<!-- ============ DIALOGUE ÉCHÉANCE ============ -->
+<dialog id="dlg-echeance">
+  <div class="dlg-tete" id="dlg-echeance-titre">Nouvelle échéance</div>
+  <form method="dialog" id="form-echeance">
+    <div class="dlg-corps">
+      <div class="champ">
+        <label for="ech-f-titre">Intitulé *</label>
+        <input type="text" id="ech-f-titre" required maxlength="120" placeholder="Ex. : Relancer l'assurance du locataire">
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="ech-f-type">Type</label>
+          <select id="ech-f-type">
+            <option>Congé</option>
+            <option>Arrêté de compte</option>
+            <option>État des lieux</option>
+            <option>Visite</option>
+            <option>Administratif</option>
+            <option selected>Autre</option>
+          </select>
+        </div>
+        <div class="champ">
+          <label for="ech-f-date">Date d'échéance *</label>
+          <input type="date" id="ech-f-date" required>
+        </div>
+      </div>
+      <div class="champ">
+        <label for="ech-f-dossier">Dossier lié (locataire / adresse du lot)</label>
+        <input type="text" id="ech-f-dossier" maxlength="160" placeholder="Ex. : M. Martin — 12 rue des Lilas, Lyon 3e">
+      </div>
+      <div class="champ-coche">
+        <input type="checkbox" id="ech-f-critique">
+        <label for="ech-f-critique">Échéance critique (délai légal ou enjeu important — remonte la priorité)</label>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="button" class="btn btn-secondaire" data-fermer>Annuler</button>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ DIALOGUE CONGÉ ============ -->
+<dialog id="dlg-conge">
+  <div class="dlg-tete" id="dlg-conge-titre">Nouveau congé locataire</div>
+  <form method="dialog" id="form-conge">
+    <div class="dlg-corps">
+      <div class="deux-col">
+        <div class="champ">
+          <label for="cg-f-locataire">Nom du locataire *</label>
+          <input type="text" id="cg-f-locataire" required maxlength="120">
+        </div>
+        <div class="champ">
+          <label for="cg-f-adresse">Adresse du lot *</label>
+          <input type="text" id="cg-f-adresse" required maxlength="160">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="cg-f-bail">Type de bail</label>
+          <select id="cg-f-bail">
+            <option value="vide">Vide</option>
+            <option value="meuble">Meublé</option>
+          </select>
+        </div>
+        <div class="champ">
+          <label for="cg-f-zone">Zone tendue</label>
+          <select id="cg-f-zone">
+            <option value="non">Non</option>
+            <option value="oui">Oui</option>
+          </select>
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="cg-f-reception">Date de réception du congé *</label>
+          <input type="date" id="cg-f-reception" required>
+        </div>
+        <div class="champ">
+          <label for="cg-f-duree">Durée du préavis (mois)</label>
+          <input type="number" id="cg-f-duree" min="0" step="1" value="3">
+          <div class="aide">Pré-remplie (3 mois bail vide hors zone tendue, 1 mois meublé ou zone tendue), modifiable.</div>
+        </div>
+      </div>
+      <div class="champ">
+        <label for="cg-f-fin">Date de fin de préavis</label>
+        <input type="date" id="cg-f-fin">
+        <div class="aide">Calculée automatiquement, modifiable si besoin.</div>
+      </div>
+      <div class="champ" id="champ-statut-conge" style="display:none">
+        <label for="cg-f-statut">Statut du dossier</label>
+        <select id="cg-f-statut">
+          <option value="recu">Reçu</option>
+          <option value="edl_planifie">EDL de sortie planifié</option>
+          <option value="parti">Locataire parti</option>
+          <option value="cloture">Clôturé</option>
+        </select>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="button" class="btn btn-secondaire" data-fermer>Annuler</button>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ DIALOGUE ARRÊTÉ ============ -->
+<dialog id="dlg-arrete">
+  <div class="dlg-tete" id="dlg-arrete-titre">Nouvel arrêté de compte</div>
+  <form method="dialog" id="form-arrete">
+    <div class="dlg-corps">
+      <div class="deux-col">
+        <div class="champ">
+          <label for="ar-f-locataire">Nom du locataire *</label>
+          <input type="text" id="ar-f-locataire" required maxlength="120">
+        </div>
+        <div class="champ">
+          <label for="ar-f-adresse">Adresse du lot *</label>
+          <input type="text" id="ar-f-adresse" required maxlength="160">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="ar-f-cles">Date de remise des clés *</label>
+          <input type="date" id="ar-f-cles" required>
+        </div>
+        <div class="champ">
+          <label for="ar-f-depot">Dépôt de garantie (€)</label>
+          <input type="number" id="ar-f-depot" min="0" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <div class="champ-coche">
+        <input type="checkbox" id="ar-f-retenues">
+        <label for="ar-f-retenues">Des retenues sont prévues sur le dépôt de garantie</label>
+      </div>
+      <div id="bloc-retenues" style="display:none">
+        <div class="deux-col">
+          <div class="champ">
+            <label for="ar-f-ret-montant">Montant des retenues (€)</label>
+            <input type="number" id="ar-f-ret-montant" min="0" step="0.01" placeholder="0,00">
+          </div>
+          <div class="champ">
+            <label for="ar-f-ret-detail">Détail des retenues</label>
+            <input type="text" id="ar-f-ret-detail" maxlength="200" placeholder="Ex. : remise en état peinture séjour">
+          </div>
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="ar-f-limite">Date limite de restitution</label>
+          <input type="date" id="ar-f-limite">
+          <div class="aide">Pré-remplie (1 mois sans retenue, 2 mois avec retenues), modifiable.</div>
+        </div>
+        <div class="champ">
+          <label for="ar-f-delai">Alerte avant la date limite (jours)</label>
+          <input type="number" id="ar-f-delai" min="0" step="1" value="7">
+        </div>
+      </div>
+      <div class="deux-col" id="bloc-statut-arrete" style="display:none">
+        <div class="champ">
+          <label for="ar-f-statut">Statut</label>
+          <select id="ar-f-statut">
+            <option value="a_traiter">À traiter</option>
+            <option value="en_cours">En cours</option>
+            <option value="restitue">Restitué</option>
+          </select>
+        </div>
+        <div class="champ" id="champ-date-restitution" style="display:none">
+          <label for="ar-f-restitution">Date de restitution effective</label>
+          <input type="date" id="ar-f-restitution">
+        </div>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="button" class="btn btn-secondaire" data-fermer>Annuler</button>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="zone-toasts"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   Dashboard de gestion locative — application autonome hors-ligne.
+   Données stockées localement (IndexedDB). Aucun appel réseau.
+   Architecture : un échéancier central alimenté par des modules.
+   Pour ajouter un module plus tard : créer son magasin IndexedDB,
+   sa vue, et une fonction de synchronisation utilisant ensureAuto().
+   ================================================================ */
+
+/* ---------------- Utilitaires ---------------- */
+function uid(){
+  return (crypto && crypto.randomUUID) ? crypto.randomUUID()
+    : 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2, 10);
+}
+function pad(n){ return String(n).padStart(2, '0'); }
+function toStr(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function fromStr(s){ const p = s.split('-').map(Number); return new Date(p[0], p[1] - 1, p[2]); }
+function todayStr(){ return toStr(new Date()); }
+function addDaysStr(s, n){ const d = fromStr(s); d.setDate(d.getDate() + n); return toStr(d); }
+function addMonthsStr(s, m){
+  const entier = Math.trunc(m), reste = m - entier;
+  const d = fromStr(s); const jour = d.getDate();
+  d.setDate(1); d.setMonth(d.getMonth() + entier);
+  const dernier = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(jour, dernier));
+  if (reste) d.setDate(d.getDate() + Math.round(reste * 30));
+  return toStr(d);
+}
+function diffJours(s){ return Math.round((fromStr(s) - fromStr(todayStr())) / 86400000); }
+function fmtDate(s){ return s ? fromStr(s).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', year:'numeric'}) : '—'; }
+function fmtEuros(v){ return (v || 0).toLocaleString('fr-FR', {minimumFractionDigits:0, maximumFractionDigits:2}) + ' €'; }
+function echap(s){
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function toast(msg){
+  const z = document.getElementById('zone-toasts');
+  const t = document.createElement('div');
+  t.className = 'toast'; t.textContent = msg;
+  z.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+/* ---------------- Base de données locale (IndexedDB) ---------------- */
+const NOM_DB = 'gestion-locative', VERSION_DB = 1;
+const MAGASINS = ['echeances', 'conges', 'arretes', 'statsEntries'];
+let db = null;
+
+function ouvrirDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(NOM_DB, VERSION_DB);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      MAGASINS.forEach(nom => {
+        if (!d.objectStoreNames.contains(nom)) d.createObjectStore(nom, {keyPath:'id'});
+      });
+      if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', {keyPath:'cle'});
+    };
+    req.onsuccess = (e) => { db = e.target.result; resolve(db); };
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbOp(magasin, mode, fn){
+  return new Promise((resolve, reject) => {
+    const t = db.transaction(magasin, mode);
+    const res = fn(t.objectStore(magasin));
+    t.oncomplete = () => resolve(res && res.result !== undefined ? res.result : undefined);
+    t.onerror = () => reject(t.error);
+  });
+}
+function dbTout(magasin){
+  return new Promise((resolve, reject) => {
+    const req = db.transaction(magasin, 'readonly').objectStore(magasin).getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+function dbEcrire(magasin, obj){ return dbOp(magasin, 'readwrite', s => s.put(obj)); }
+function dbSupprimer(magasin, id){ return dbOp(magasin, 'readwrite', s => s.delete(id)); }
+function dbVider(magasin){ return dbOp(magasin, 'readwrite', s => s.clear()); }
+async function metaLire(cle){
+  const lignes = await dbTout('meta');
+  const l = lignes.find(x => x.cle === cle);
+  return l ? l.valeur : null;
+}
+function metaEcrire(cle, valeur){
+  etat.meta[cle] = valeur;
+  return dbEcrire('meta', {cle, valeur});
+}
+
+/* ---------------- État en mémoire ---------------- */
+const etat = {
+  echeances: [], conges: [], arretes: [], statsEntries: [], meta: {},
+  granulariteStats: 'mois',
+  voirArchives: false
+};
+
+async function chargerEtat(){
+  etat.echeances = await dbTout('echeances');
+  etat.conges = await dbTout('conges');
+  etat.arretes = await dbTout('arretes');
+  etat.statsEntries = await dbTout('statsEntries');
+  const lignesMeta = await dbTout('meta');
+  etat.meta = {};
+  lignesMeta.forEach(l => { etat.meta[l.cle] = l.valeur; });
+}
+
+/* ---------------- Échéances : priorité et synchronisation ---------------- */
+function prioriteEcheance(e){
+  const d = diffJours(e.dateEcheance);
+  let score = d < 0 ? 100 : d <= 2 ? 80 : d <= 7 ? 55 : d <= 14 ? 35 : 15;
+  if (e.critique) score += 25;
+  return score >= 80 ? 'haute' : score >= 50 ? 'moyenne' : 'basse';
+}
+const LIBELLE_PRIORITE = {haute:'Haute', moyenne:'Moyenne', basse:'Basse'};
+
+/* Crée, met à jour ou archive une échéance automatique liée à un dossier.
+   - cleAuto : identifiant stable (ex. "conge:<id>:edl")
+   - doitExister : la condition métier est-elle remplie ?
+   - garderDate : ne pas écraser la date d'une échéance active existante */
+async function ensureAuto(cleAuto, doitExister, props, garderDate){
+  const existantes = etat.echeances.filter(e => e.cleAuto === cleAuto);
+  const active = existantes.find(e => e.statut === 'active');
+  if (doitExister){
+    if (active){
+      const date = garderDate ? active.dateEcheance : props.dateEcheance;
+      Object.assign(active, props, {dateEcheance: date});
+      await dbEcrire('echeances', active);
+    } else if (existantes.length === 0){
+      const e = Object.assign({
+        id: uid(), statut: 'active', creeLe: new Date().toISOString(), cleAuto
+      }, props);
+      etat.echeances.push(e);
+      await dbEcrire('echeances', e);
+    }
+    /* si une version archivée existe déjà : tâche déjà traitée, on ne recrée pas */
+  } else if (active){
+    active.statut = 'archivee';
+    active.faitLe = new Date().toISOString();
+    await dbEcrire('echeances', active);
+  }
+}
+
+function libelleDossier(x){ return x.locataire + ' — ' + x.adresse; }
+
+async function syncConge(c){
+  const dossier = libelleDossier(c);
+  await ensureAuto('conge:' + c.id + ':edl', c.statut === 'recu', {
+    titre: "Planifier l'EDL de sortie",
+    type: 'Congé', dossier,
+    dateEcheance: addDaysStr(c.dateFinPreavis, -14),
+    critique: false, sourceType: 'conge', sourceId: c.id
+  }, false);
+  await ensureAuto('conge:' + c.id + ':arrete', c.statut === 'parti', {
+    titre: "Démarrer l'arrêté de compte",
+    type: 'Arrêté de compte', dossier,
+    dateEcheance: addDaysStr(todayStr(), 3),
+    critique: false, sourceType: 'conge', sourceId: c.id
+  }, true);
+}
+
+async function syncArrete(a){
+  const dossier = libelleDossier(a);
+  const delai = (a.delaiAlerte == null || isNaN(a.delaiAlerte)) ? 7 : a.delaiAlerte;
+  await ensureAuto('arrete:' + a.id + ':restitution', a.statut !== 'restitue', {
+    titre: 'Préparer la restitution du dépôt de garantie (limite le ' + fmtDate(a.dateLimite) + ')',
+    type: 'Arrêté de compte', dossier,
+    dateEcheance: addDaysStr(a.dateLimite, -delai),
+    critique: true, sourceType: 'arrete', sourceId: a.id
+  }, false);
+}
+
+async function supprimerEcheancesLiees(sourceId){
+  const liees = etat.echeances.filter(e => e.sourceId === sourceId);
+  for (const e of liees) await dbSupprimer('echeances', e.id);
+  etat.echeances = etat.echeances.filter(e => e.sourceId !== sourceId);
+}
+
+/* ---------------- Rendu : échéancier ---------------- */
+const LIBELLE_STATUT_CONGE = {recu:'Reçu', edl_planifie:'EDL de sortie planifié', parti:'Locataire parti', cloture:'Clôturé'};
+const LIBELLE_STATUT_ARRETE = {a_traiter:'À traiter', en_cours:'En cours', restitue:'Restitué'};
+
+function ligneEcheanceHTML(e, archivee){
+  const prio = prioriteEcheance(e);
+  const d = diffJours(e.dateEcheance);
+  let relatif = '';
+  if (!archivee){
+    relatif = d < 0 ? Math.abs(d) + ' j de retard' : d === 0 ? "aujourd'hui" : 'dans ' + d + ' j';
+  }
+  const droite = archivee
+    ? '<span class="badge badge-type">' + echap(e.type) + '</span>' +
+      '<span class="ech-date">' + fmtDate(e.dateEcheance) +
+      '<small>fait le ' + (e.faitLe ? fmtDate(e.faitLe.slice(0,10)) : '—') + '</small></span>' +
+      '<button class="btn btn-secondaire btn-petit" data-restaurer="' + e.id + '">Restaurer</button>' +
+      '<button class="btn btn-danger btn-petit" data-suppr-ech="' + e.id + '" title="Supprimer définitivement">✕</button>'
+    : '<span class="badge badge-type">' + echap(e.type) + '</span>' +
+      '<span class="badge badge-' + prio + '">' + LIBELLE_PRIORITE[prio] + '</span>' +
+      '<span class="ech-date">' + fmtDate(e.dateEcheance) + '<small>' + relatif + '</small></span>' +
+      (e.sourceType ? '' : '<button class="btn btn-secondaire btn-petit" data-modif-ech="' + e.id + '">Modifier</button>') +
+      '<button class="btn btn-danger btn-petit" data-suppr-ech="' + e.id + '" title="Supprimer">✕</button>';
+  return '<div class="ligne-echeance">' +
+    (archivee ? '' : '<input type="checkbox" data-fait="' + e.id + '" title="Marquer comme fait (archive l\'échéance)">') +
+    '<div class="ech-infos"><div class="ech-titre">' + echap(e.titre) + '</div>' +
+    (e.dossier ? '<div class="ech-dossier">' + echap(e.dossier) + '</div>' : '') +
+    '</div><div class="ech-droite">' + droite + '</div></div>';
+}
+
+function rendreEcheancier(){
+  const recherche = document.getElementById('recherche-ech').value.trim().toLowerCase();
+  const fType = document.getElementById('filtre-type-ech').value;
+  const fPrio = document.getElementById('filtre-priorite-ech').value;
+
+  const correspond = (e) =>
+    (!recherche || (e.titre + ' ' + (e.dossier || '')).toLowerCase().includes(recherche)) &&
+    (!fType || e.type === fType) &&
+    (!fPrio || prioriteEcheance(e) === fPrio);
+
+  const actives = etat.echeances.filter(e => e.statut === 'active' && correspond(e))
+    .sort((a, b) => a.dateEcheance.localeCompare(b.dateEcheance));
+
+  const groupes = {retard: [], jour: [], semaine: [], plustard: []};
+  actives.forEach(e => {
+    const d = diffJours(e.dateEcheance);
+    if (d < 0) groupes.retard.push(e);
+    else if (d === 0) groupes.jour.push(e);
+    else if (d <= 7) groupes.semaine.push(e);
+    else groupes.plustard.push(e);
+  });
+
+  const bloc = (cls, titre, liste, msgVide) =>
+    '<div class="carte"><h2 class="titre-bloc ' + cls + '">' + titre +
+    ' <span class="compteur">(' + liste.length + ')</span></h2>' +
+    (liste.length ? liste.map(e => ligneEcheanceHTML(e, false)).join('')
+                  : '<div class="vide">' + msgVide + '</div>') + '</div>';
+
+  document.getElementById('liste-echeances').innerHTML =
+    bloc('titre-retard', '⚠ En retard', groupes.retard, 'Rien en retard. Parfait.') +
+    bloc('titre-jour', "📌 Aujourd'hui", groupes.jour, "Rien à faire impérativement aujourd'hui.") +
+    bloc('titre-semaine', '🗓 7 prochains jours', groupes.semaine, 'Aucune échéance cette semaine.') +
+    bloc('titre-plustard', '⏳ Plus tard', groupes.plustard, 'Aucune échéance plus lointaine.');
+
+  /* Archives */
+  const archives = etat.echeances.filter(e => e.statut === 'archivee' && correspond(e))
+    .sort((a, b) => (b.faitLe || '').localeCompare(a.faitLe || ''));
+  document.getElementById('bloc-archives').style.display = etat.voirArchives ? '' : 'none';
+  document.getElementById('btn-voir-archives').textContent =
+    etat.voirArchives ? 'Masquer les échéances archivées' : 'Voir les échéances archivées';
+  document.getElementById('cpt-archives').textContent = '(' + archives.length + ')';
+  document.getElementById('liste-archives').innerHTML =
+    archives.length ? archives.map(e => ligneEcheanceHTML(e, true)).join('')
+                    : '<div class="vide">Aucune échéance archivée.</div>';
+
+  /* Pastille onglet : retard + aujourd'hui (sans filtres) */
+  const urgent = etat.echeances.filter(e => e.statut === 'active' && diffJours(e.dateEcheance) <= 0).length;
+  const past = document.getElementById('pastille-urgent');
+  past.style.display = urgent ? '' : 'none';
+  past.textContent = urgent;
+
+  /* Filtre type : alimenter la liste des types existants */
+  const types = [...new Set(etat.echeances.map(e => e.type))].sort();
+  const sel = document.getElementById('filtre-type-ech');
+  const valeur = sel.value;
+  sel.innerHTML = '<option value="">Tous les types</option>' +
+    types.map(t => '<option' + (t === valeur ? ' selected' : '') + '>' + echap(t) + '</option>').join('');
+}
+
+/* ---------------- Rendu : congés ---------------- */
+function rendreConges(){
+  const recherche = document.getElementById('recherche-conge').value.trim().toLowerCase();
+  const fStatut = document.getElementById('filtre-statut-conge').value;
+  const liste = etat.conges
+    .filter(c => (!recherche || (c.locataire + ' ' + c.adresse).toLowerCase().includes(recherche)) &&
+                 (!fStatut || c.statut === fStatut))
+    .sort((a, b) => a.dateFinPreavis.localeCompare(b.dateFinPreavis));
+
+  if (!liste.length){
+    document.getElementById('liste-conges').innerHTML =
+      '<div class="vide">Aucun congé enregistré. Cliquez sur « ＋ Nouveau congé » pour commencer.</div>';
+    return;
+  }
+  const lignes = liste.map(c => {
+    const d = diffJours(c.dateFinPreavis);
+    const finBadge = (c.statut === 'cloture' || c.statut === 'parti') ? ''
+      : d < 0 ? ' <span class="badge badge-haute">dépassé</span>'
+      : d <= 14 ? ' <span class="badge badge-moyenne">J-' + d + '</span>' : '';
+    const options = Object.keys(LIBELLE_STATUT_CONGE).map(s =>
+      '<option value="' + s + '"' + (c.statut === s ? ' selected' : '') + '>' + LIBELLE_STATUT_CONGE[s] + '</option>').join('');
+    return '<tr>' +
+      '<td><div class="nom-loc">' + echap(c.locataire) + '</div><div class="sous-info">' + echap(c.adresse) + '</div></td>' +
+      '<td>' + (c.typeBail === 'meuble' ? 'Meublé' : 'Vide') +
+        '<div class="sous-info">Zone tendue : ' + (c.zoneTendue ? 'oui' : 'non') + '</div></td>' +
+      '<td>' + fmtDate(c.dateReception) + '<div class="sous-info">préavis ' + c.dureePreavisMois + ' mois</div></td>' +
+      '<td><strong>' + fmtDate(c.dateFinPreavis) + '</strong>' + finBadge + '</td>' +
+      '<td><select data-statut-conge="' + c.id + '">' + options + '</select></td>' +
+      '<td class="cell-actions">' +
+        '<button class="btn btn-secondaire btn-petit" data-modif-conge="' + c.id + '">Modifier</button> ' +
+        '<button class="btn btn-danger btn-petit" data-suppr-conge="' + c.id + '">Supprimer</button></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('liste-conges').innerHTML =
+    '<table><thead><tr><th>Locataire / lot</th><th>Bail</th><th>Congé reçu le</th>' +
+    '<th>Fin de préavis</th><th>Statut</th><th></th></tr></thead><tbody>' + lignes + '</tbody></table>';
+}
+
+/* ---------------- Rendu : arrêtés ---------------- */
+function rendreArretes(){
+  const recherche = document.getElementById('recherche-arrete').value.trim().toLowerCase();
+  const fStatut = document.getElementById('filtre-statut-arrete').value;
+  const liste = etat.arretes
+    .filter(a => (!recherche || (a.locataire + ' ' + a.adresse).toLowerCase().includes(recherche)) &&
+                 (!fStatut || a.statut === fStatut))
+    .sort((a, b) => a.dateLimite.localeCompare(b.dateLimite));
+
+  if (!liste.length){
+    document.getElementById('liste-arretes').innerHTML =
+      '<div class="vide">Aucun arrêté de compte. Cliquez sur « ＋ Nouvel arrêté de compte » pour commencer.</div>';
+    return;
+  }
+  const lignes = liste.map(a => {
+    const d = diffJours(a.dateLimite);
+    const limBadge = a.statut === 'restitue' ? ''
+      : d < 0 ? ' <span class="badge badge-haute">dépassée</span>'
+      : d <= 7 ? ' <span class="badge badge-moyenne">J-' + d + '</span>' : '';
+    const retenues = a.retenues
+      ? '<span class="badge badge-moyenne">Oui</span><div class="sous-info">' +
+        fmtEuros(a.retenuesMontant) + (a.retenuesDetail ? ' — ' + echap(a.retenuesDetail) : '') + '</div>'
+      : '<span class="badge badge-statut">Non</span>';
+    const options = Object.keys(LIBELLE_STATUT_ARRETE).map(s =>
+      '<option value="' + s + '"' + (a.statut === s ? ' selected' : '') + '>' + LIBELLE_STATUT_ARRETE[s] + '</option>').join('');
+    const restitue = a.statut === 'restitue' && a.dateRestitution
+      ? '<div class="sous-info">restitué le ' + fmtDate(a.dateRestitution) + '</div>' : '';
+    return '<tr>' +
+      '<td><div class="nom-loc">' + echap(a.locataire) + '</div><div class="sous-info">' + echap(a.adresse) + '</div></td>' +
+      '<td>' + fmtDate(a.dateRemiseCles) + '</td>' +
+      '<td>' + fmtEuros(a.montantDepot) + '</td>' +
+      '<td>' + retenues + '</td>' +
+      '<td><strong>' + fmtDate(a.dateLimite) + '</strong>' + limBadge + '</td>' +
+      '<td><select data-statut-arrete="' + a.id + '">' + options + '</select>' + restitue + '</td>' +
+      '<td class="cell-actions">' +
+        '<button class="btn btn-secondaire btn-petit" data-modif-arrete="' + a.id + '">Modifier</button> ' +
+        '<button class="btn btn-danger btn-petit" data-suppr-arrete="' + a.id + '">Supprimer</button></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('liste-arretes').innerHTML =
+    '<table><thead><tr><th>Locataire / lot</th><th>Clés remises le</th><th>Dépôt</th>' +
+    '<th>Retenues</th><th>Limite restitution</th><th>Statut</th><th></th></tr></thead><tbody>' +
+    lignes + '</tbody></table>';
+}
+
+/* ---------------- Stats ---------------- */
+const KPIS = [
+  {id:'edl_entree', titre:"États des lieux d'entrée réalisés", type:'compte', series:['edl_entree']},
+  {id:'honoraires', titre:'Honoraires de vacation cumulés', type:'montant', series:['honoraires'],
+   aide:'Visites patrimoniales et suivis de sinistres.'},
+  {id:'attrition', titre:'Attrition du portefeuille (solde net)', type:'net', series:['mandats', 'pertes'],
+   aide:'Mandats entrés − pertes de gestion.'},
+  {id:'digital', titre:'Locations 100 % digitales réalisées', type:'compte', series:['digital']}
+];
+
+function bornesPeriode(gran, decalage){
+  const n = new Date(); let deb, fin;
+  if (gran === 'mois'){
+    deb = new Date(n.getFullYear(), n.getMonth() + decalage, 1);
+    fin = new Date(n.getFullYear(), n.getMonth() + decalage + 1, 0);
+  } else if (gran === 'trimestre'){
+    const q = Math.floor(n.getMonth() / 3) + decalage;
+    deb = new Date(n.getFullYear(), q * 3, 1);
+    fin = new Date(n.getFullYear(), q * 3 + 3, 0);
+  } else {
+    deb = new Date(n.getFullYear() + decalage, 0, 1);
+    fin = new Date(n.getFullYear() + decalage, 11, 31);
+  }
+  return [toStr(deb), toStr(fin)];
+}
+function libellePeriode(gran, decalage){
+  const deb = fromStr(bornesPeriode(gran, decalage)[0]);
+  if (gran === 'mois') return deb.toLocaleDateString('fr-FR', {month:'short', year:'2-digit'});
+  if (gran === 'trimestre') return 'T' + (Math.floor(deb.getMonth() / 3) + 1) + ' ' + String(deb.getFullYear()).slice(2);
+  return String(deb.getFullYear());
+}
+function libellePeriodeLong(gran){
+  const deb = fromStr(bornesPeriode(gran, 0)[0]);
+  if (gran === 'mois') return deb.toLocaleDateString('fr-FR', {month:'long', year:'numeric'});
+  if (gran === 'trimestre') return 'T' + (Math.floor(deb.getMonth() / 3) + 1) + ' ' + deb.getFullYear();
+  return 'Année ' + deb.getFullYear();
+}
+function sommeSerie(serie, deb, fin){
+  return etat.statsEntries
+    .filter(x => x.serie === serie && x.date >= deb && x.date <= fin)
+    .reduce((acc, x) => acc + (Number(x.valeur) || 0), 0);
+}
+function valeurKpi(kpi, deb, fin){
+  if (kpi.type === 'net') return sommeSerie('mandats', deb, fin) - sommeSerie('pertes', deb, fin);
+  return sommeSerie(kpi.series[0], deb, fin);
+}
+function fmtCourt(v){
+  const a = Math.abs(v);
+  if (a >= 10000) return Math.round(v / 1000) + 'k';
+  if (a >= 1000) return (v / 1000).toFixed(1).replace('.', ',') + 'k';
+  return String(Math.round(v * 100) / 100);
+}
+function grapheBarres(valeurs, libelles){
+  const W = 280, H = 86, PB = 14, PH = 12;
+  const max = Math.max(1, ...valeurs.map(v => Math.abs(v)));
+  const n = valeurs.length;
+  const aNegatif = valeurs.some(v => v < 0);
+  const base = aNegatif ? (H - PB) / 2 + PH / 2 : H - PB;
+  const echelle = (aNegatif ? (H - PB - PH) / 2 : H - PB - PH) / max;
+  let s = '<svg viewBox="0 0 ' + W + ' ' + H + '" class="chart" role="img" aria-label="Historique">';
+  const largeur = (W - 10) / n;
+  valeurs.forEach((v, i) => {
+    const x = 5 + largeur * i + largeur * 0.18;
+    const bw = largeur * 0.64;
+    const h = Math.abs(v) * echelle;
+    const y = v >= 0 ? base - h : base;
+    s += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + bw.toFixed(1) +
+         '" height="' + Math.max(h, v === 0 ? 0.5 : 1).toFixed(1) + '" rx="2" class="' + (v < 0 ? 'bar-neg' : 'bar') + '"/>';
+    s += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + (H - 3) + '" class="chart-lbl">' + echap(libelles[i]) + '</text>';
+    const yv = v >= 0 ? Math.max(y - 3, 8) : Math.min(y + h + 9, H - PB - 2);
+    s += '<text x="' + (x + bw / 2).toFixed(1) + '" y="' + yv.toFixed(1) + '" class="chart-val">' + fmtCourt(v) + '</text>';
+  });
+  return s + '</svg>';
+}
+
+function rendreStats(){
+  const gran = etat.granulariteStats;
+  document.getElementById('libelle-periode').textContent = libellePeriodeLong(gran);
+  document.querySelectorAll('#selecteur-periode button').forEach(b =>
+    b.classList.toggle('actif', b.dataset.gran === gran));
+
+  const [deb, fin] = bornesPeriode(gran, 0);
+  const html = KPIS.map(kpi => {
+    const realise = valeurKpi(kpi, deb, fin);
+    const objectif = Number(etat.meta['objectif:' + kpi.id + ':' + gran]) || 0;
+    const pct = objectif > 0 ? Math.max(0, Math.min(100, Math.round(realise / objectif * 100))) : 0;
+    const estEuro = kpi.type === 'montant';
+    const valTxt = estEuro ? fmtEuros(realise) : String(realise);
+
+    let detail = '';
+    if (kpi.type === 'net'){
+      detail = '<div class="sous-info" style="margin-top:2px">Mandats entrés : ' +
+        sommeSerie('mandats', deb, fin) + ' &nbsp;•&nbsp; Pertes de gestion : ' +
+        sommeSerie('pertes', deb, fin) + '</div>';
+    }
+
+    /* Historique : 6 dernières périodes */
+    const valeurs = [], libelles = [];
+    for (let k = -5; k <= 0; k++){
+      const [d2, f2] = bornesPeriode(gran, k);
+      valeurs.push(valeurKpi(kpi, d2, f2));
+      libelles.push(libellePeriode(gran, k));
+    }
+
+    let saisie;
+    if (kpi.type === 'net'){
+      saisie =
+        '<div class="ligne-saisie">' +
+        '<button class="btn btn-secondaire btn-petit" data-ajout="mandats" data-val="1">＋1 mandat entré</button>' +
+        '<button class="btn btn-secondaire btn-petit" data-ajout="pertes" data-val="1">＋1 perte de gestion</button>' +
+        '<button class="btn btn-secondaire btn-petit" data-annuler="mandats,pertes" title="Annuler la dernière saisie">↩</button>' +
+        '</div>';
+    } else if (kpi.type === 'montant'){
+      saisie =
+        '<div class="ligne-saisie">' +
+        '<input type="number" min="0" step="0.01" placeholder="Montant €" id="saisie-' + kpi.id + '">' +
+        '<button class="btn btn-secondaire btn-petit" data-ajout-montant="' + kpi.series[0] + '" data-champ="saisie-' + kpi.id + '">Ajouter</button>' +
+        '<button class="btn btn-secondaire btn-petit" data-annuler="' + kpi.series[0] + '" title="Annuler la dernière saisie">↩</button>' +
+        '</div>';
+    } else {
+      saisie =
+        '<div class="ligne-saisie">' +
+        '<button class="btn btn-secondaire btn-petit" data-ajout="' + kpi.series[0] + '" data-val="1">＋1</button>' +
+        '<button class="btn btn-secondaire btn-petit" data-annuler="' + kpi.series[0] + '" title="Annuler la dernière saisie">↩</button>' +
+        '</div>';
+    }
+
+    const objAffiche = objectif > 0
+      ? (estEuro ? fmtEuros(objectif) : objectif)
+      : 'à définir';
+    return '<div class="carte">' +
+      '<h3 class="kpi-titre">' + kpi.titre + '</h3>' +
+      (kpi.aide ? '<div class="sous-info">' + kpi.aide + '</div>' : '') +
+      '<div class="kpi-valeur" style="margin-top:8px">' + valTxt +
+      ' <small>/ objectif : ' + objAffiche + '</small></div>' + detail +
+      '<div class="jauge"><div class="' + (pct >= 100 ? 'atteint' : '') + '" style="width:' + pct + '%"></div></div>' +
+      '<div class="sous-info">' + (objectif > 0 ? pct + ' % de l\'objectif' : 'Définissez un objectif pour suivre votre progression') + '</div>' +
+      '<div class="ligne-objectif"><span>Objectif (' + (gran === 'annee' ? 'année' : gran) + ') :</span>' +
+      '<input type="number" min="0" step="' + (estEuro ? '0.01' : '1') + '" value="' + (objectif || '') +
+      '" data-objectif="' + kpi.id + '" placeholder="0"></div>' +
+      saisie +
+      grapheBarres(valeurs, libelles) +
+      '</div>';
+  }).join('');
+  document.getElementById('grille-stats').innerHTML = html;
+}
+
+/* ---------------- Bandeau de sauvegarde ---------------- */
+function rendreBandeau(){
+  const bandeau = document.getElementById('bandeau-sauvegarde');
+  const aDesDonnees = etat.echeances.length || etat.conges.length ||
+                      etat.arretes.length || etat.statsEntries.length;
+  if (!aDesDonnees){ bandeau.classList.remove('visible'); return; }
+  const dernier = etat.meta['derniereExportation'];
+  let visible = false, texte = '';
+  if (!dernier){
+    visible = true;
+    texte = '💾 Vos données n\'ont encore jamais été sauvegardées. Pensez à exporter régulièrement.';
+  } else {
+    const jours = Math.floor((Date.now() - new Date(dernier).getTime()) / 86400000);
+    if (jours >= 7){
+      visible = true;
+      texte = '💾 Dernière sauvegarde il y a ' + jours + ' jours. Pensez à exporter vos données.';
+    }
+  }
+  document.getElementById('texte-bandeau').textContent = texte;
+  bandeau.classList.toggle('visible', visible);
+}
+
+/* ---------------- Rendu global ---------------- */
+function rendreTout(){
+  rendreEcheancier();
+  rendreConges();
+  rendreArretes();
+  rendreStats();
+  rendreBandeau();
+}
+
+/* ---------------- Export / import ---------------- */
+async function exporterDonnees(){
+  const donnees = {
+    application: 'dashboard-gestion-locative',
+    version: 1,
+    exporteLe: new Date().toISOString(),
+    donnees: {
+      echeances: etat.echeances,
+      conges: etat.conges,
+      arretes: etat.arretes,
+      statsEntries: etat.statsEntries,
+      meta: Object.keys(etat.meta).map(cle => ({cle, valeur: etat.meta[cle]}))
+    }
+  };
+  const blob = new Blob([JSON.stringify(donnees, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'sauvegarde-gestion-locative-' + todayStr() + '.json';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  await metaEcrire('derniereExportation', new Date().toISOString());
+  rendreBandeau();
+  toast('Sauvegarde téléchargée.');
+}
+
+async function importerDonnees(fichier){
+  let donnees;
+  try {
+    donnees = JSON.parse(await fichier.text());
+  } catch (err){
+    alert('Ce fichier n\'est pas une sauvegarde valide (lecture impossible).');
+    return;
+  }
+  if (!donnees || donnees.application !== 'dashboard-gestion-locative' || !donnees.donnees){
+    alert('Ce fichier ne semble pas être une sauvegarde de cette application.');
+    return;
+  }
+  if (!confirm('Importer cette sauvegarde remplacera toutes les données actuelles. Continuer ?')) return;
+  const d = donnees.donnees;
+  for (const m of MAGASINS) await dbVider(m);
+  await dbVider('meta');
+  for (const e of (d.echeances || [])) await dbEcrire('echeances', e);
+  for (const c of (d.conges || [])) await dbEcrire('conges', c);
+  for (const a of (d.arretes || [])) await dbEcrire('arretes', a);
+  for (const s of (d.statsEntries || [])) await dbEcrire('statsEntries', s);
+  for (const l of (d.meta || [])) await dbEcrire('meta', l);
+  await chargerEtat();
+  rendreTout();
+  toast('Sauvegarde importée avec succès.');
+}
+
+/* ---------------- Dialogues : échéance ---------------- */
+let echeanceEnEdition = null;
+
+function ouvrirDlgEcheance(e){
+  echeanceEnEdition = e || null;
+  document.getElementById('dlg-echeance-titre').textContent = e ? 'Modifier l\'échéance' : 'Nouvelle échéance';
+  document.getElementById('ech-f-titre').value = e ? e.titre : '';
+  document.getElementById('ech-f-type').value = e ? e.type : 'Autre';
+  document.getElementById('ech-f-date').value = e ? e.dateEcheance : todayStr();
+  document.getElementById('ech-f-dossier').value = e ? (e.dossier || '') : '';
+  document.getElementById('ech-f-critique').checked = e ? !!e.critique : false;
+  document.getElementById('dlg-echeance').showModal();
+}
+
+async function validerEcheance(){
+  const titre = document.getElementById('ech-f-titre').value.trim();
+  const date = document.getElementById('ech-f-date').value;
+  if (!titre || !date) return;
+  if (echeanceEnEdition){
+    Object.assign(echeanceEnEdition, {
+      titre,
+      type: document.getElementById('ech-f-type').value,
+      dateEcheance: date,
+      dossier: document.getElementById('ech-f-dossier').value.trim(),
+      critique: document.getElementById('ech-f-critique').checked
+    });
+    await dbEcrire('echeances', echeanceEnEdition);
+    toast('Échéance modifiée.');
+  } else {
+    const e = {
+      id: uid(),
+      titre,
+      type: document.getElementById('ech-f-type').value,
+      dateEcheance: date,
+      dossier: document.getElementById('ech-f-dossier').value.trim(),
+      critique: document.getElementById('ech-f-critique').checked,
+      statut: 'active',
+      creeLe: new Date().toISOString()
+    };
+    etat.echeances.push(e);
+    await dbEcrire('echeances', e);
+    toast('Échéance ajoutée.');
+  }
+  rendreTout();
+}
+
+/* ---------------- Dialogues : congé ---------------- */
+let congeEnEdition = null;
+
+function dureePreavisDefaut(){
+  const meuble = document.getElementById('cg-f-bail').value === 'meuble';
+  const tendue = document.getElementById('cg-f-zone').value === 'oui';
+  return (meuble || tendue) ? 1 : 3;
+}
+function recalculerFinPreavis(){
+  const reception = document.getElementById('cg-f-reception').value;
+  const duree = Number(document.getElementById('cg-f-duree').value);
+  if (reception && !isNaN(duree)){
+    document.getElementById('cg-f-fin').value = addMonthsStr(reception, duree);
+  }
+}
+
+function ouvrirDlgConge(c){
+  congeEnEdition = c || null;
+  document.getElementById('dlg-conge-titre').textContent = c ? 'Modifier le congé' : 'Nouveau congé locataire';
+  document.getElementById('cg-f-locataire').value = c ? c.locataire : '';
+  document.getElementById('cg-f-adresse').value = c ? c.adresse : '';
+  document.getElementById('cg-f-bail').value = c ? c.typeBail : 'vide';
+  document.getElementById('cg-f-zone').value = c ? (c.zoneTendue ? 'oui' : 'non') : 'non';
+  document.getElementById('cg-f-reception').value = c ? c.dateReception : todayStr();
+  document.getElementById('cg-f-duree').value = c ? c.dureePreavisMois : dureePreavisDefaut();
+  document.getElementById('cg-f-fin').value = c ? c.dateFinPreavis : '';
+  document.getElementById('champ-statut-conge').style.display = c ? '' : 'none';
+  if (c) document.getElementById('cg-f-statut').value = c.statut;
+  if (!c) recalculerFinPreavis();
+  document.getElementById('dlg-conge').showModal();
+}
+
+async function validerConge(){
+  const locataire = document.getElementById('cg-f-locataire').value.trim();
+  const adresse = document.getElementById('cg-f-adresse').value.trim();
+  const reception = document.getElementById('cg-f-reception').value;
+  if (!locataire || !adresse || !reception) return;
+  const duree = Number(document.getElementById('cg-f-duree').value) || 0;
+  let fin = document.getElementById('cg-f-fin').value;
+  if (!fin) fin = addMonthsStr(reception, duree);
+  const donnees = {
+    locataire, adresse,
+    typeBail: document.getElementById('cg-f-bail').value,
+    zoneTendue: document.getElementById('cg-f-zone').value === 'oui',
+    dateReception: reception,
+    dureePreavisMois: duree,
+    dateFinPreavis: fin
+  };
+  let c;
+  if (congeEnEdition){
+    c = congeEnEdition;
+    Object.assign(c, donnees, {statut: document.getElementById('cg-f-statut').value});
+    toast('Congé modifié.');
+  } else {
+    c = Object.assign({id: uid(), statut: 'recu', creeLe: new Date().toISOString()}, donnees);
+    etat.conges.push(c);
+    toast('Congé enregistré. Une échéance « Planifier l\'EDL de sortie » a été créée.');
+  }
+  await dbEcrire('conges', c);
+  await syncConge(c);
+  rendreTout();
+}
+
+/* ---------------- Dialogues : arrêté ---------------- */
+let arreteEnEdition = null;
+
+function recalculerLimiteRestitution(){
+  const cles = document.getElementById('ar-f-cles').value;
+  const retenues = document.getElementById('ar-f-retenues').checked;
+  if (cles){
+    document.getElementById('ar-f-limite').value = addMonthsStr(cles, retenues ? 2 : 1);
+  }
+}
+function majBlocRetenues(){
+  document.getElementById('bloc-retenues').style.display =
+    document.getElementById('ar-f-retenues').checked ? '' : 'none';
+}
+function majChampRestitution(){
+  const restitue = document.getElementById('ar-f-statut').value === 'restitue';
+  document.getElementById('champ-date-restitution').style.display = restitue ? '' : 'none';
+  if (restitue && !document.getElementById('ar-f-restitution').value){
+    document.getElementById('ar-f-restitution').value = todayStr();
+  }
+}
+
+function ouvrirDlgArrete(a){
+  arreteEnEdition = a || null;
+  document.getElementById('dlg-arrete-titre').textContent = a ? 'Modifier l\'arrêté de compte' : 'Nouvel arrêté de compte';
+  document.getElementById('ar-f-locataire').value = a ? a.locataire : '';
+  document.getElementById('ar-f-adresse').value = a ? a.adresse : '';
+  document.getElementById('ar-f-cles').value = a ? a.dateRemiseCles : todayStr();
+  document.getElementById('ar-f-depot').value = a ? (a.montantDepot != null ? a.montantDepot : '') : '';
+  document.getElementById('ar-f-retenues').checked = a ? !!a.retenues : false;
+  document.getElementById('ar-f-ret-montant').value = a && a.retenuesMontant != null ? a.retenuesMontant : '';
+  document.getElementById('ar-f-ret-detail').value = a ? (a.retenuesDetail || '') : '';
+  document.getElementById('ar-f-limite').value = a ? a.dateLimite : '';
+  document.getElementById('ar-f-delai').value = a ? (a.delaiAlerte != null ? a.delaiAlerte : 7) : 7;
+  document.getElementById('bloc-statut-arrete').style.display = a ? '' : 'none';
+  if (a){
+    document.getElementById('ar-f-statut').value = a.statut;
+    document.getElementById('ar-f-restitution').value = a.dateRestitution || '';
+  }
+  majBlocRetenues();
+  majChampRestitution();
+  if (!a) recalculerLimiteRestitution();
+  document.getElementById('dlg-arrete').showModal();
+}
+
+async function validerArrete(){
+  const locataire = document.getElementById('ar-f-locataire').value.trim();
+  const adresse = document.getElementById('ar-f-adresse').value.trim();
+  const cles = document.getElementById('ar-f-cles').value;
+  if (!locataire || !adresse || !cles) return;
+  const retenues = document.getElementById('ar-f-retenues').checked;
+  let limite = document.getElementById('ar-f-limite').value;
+  if (!limite) limite = addMonthsStr(cles, retenues ? 2 : 1);
+  const donnees = {
+    locataire, adresse,
+    dateRemiseCles: cles,
+    montantDepot: Number(document.getElementById('ar-f-depot').value) || 0,
+    retenues,
+    retenuesMontant: retenues ? (Number(document.getElementById('ar-f-ret-montant').value) || 0) : 0,
+    retenuesDetail: retenues ? document.getElementById('ar-f-ret-detail').value.trim() : '',
+    dateLimite: limite,
+    delaiAlerte: Math.max(0, Number(document.getElementById('ar-f-delai').value) || 0)
+  };
+  let a;
+  if (arreteEnEdition){
+    a = arreteEnEdition;
+    const statut = document.getElementById('ar-f-statut').value;
+    Object.assign(a, donnees, {
+      statut,
+      dateRestitution: statut === 'restitue' ? (document.getElementById('ar-f-restitution').value || todayStr()) : null
+    });
+    toast('Arrêté de compte modifié.');
+  } else {
+    a = Object.assign({id: uid(), statut: 'a_traiter', dateRestitution: null,
+                       creeLe: new Date().toISOString()}, donnees);
+    etat.arretes.push(a);
+    toast('Arrêté enregistré. Une alerte de restitution a été ajoutée à l\'échéancier.');
+  }
+  await dbEcrire('arretes', a);
+  await syncArrete(a);
+  rendreTout();
+}
+
+/* ---------------- Événements ---------------- */
+function initEvenements(){
+  /* Navigation */
+  document.querySelectorAll('nav button').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('nav button').forEach(x => x.classList.remove('actif'));
+      b.classList.add('actif');
+      document.querySelectorAll('.vue').forEach(v => v.classList.remove('active'));
+      document.getElementById('vue-' + b.dataset.vue).classList.add('active');
+    });
+  });
+
+  /* Export / import */
+  document.getElementById('btn-exporter').addEventListener('click', exporterDonnees);
+  document.getElementById('btn-export-bandeau').addEventListener('click', exporterDonnees);
+  document.getElementById('btn-importer').addEventListener('click', () =>
+    document.getElementById('fichier-import').click());
+  document.getElementById('fichier-import').addEventListener('change', async (e) => {
+    if (e.target.files && e.target.files[0]) await importerDonnees(e.target.files[0]);
+    e.target.value = '';
+  });
+
+  /* Filtres échéancier */
+  ['recherche-ech', 'filtre-type-ech', 'filtre-priorite-ech'].forEach(id =>
+    document.getElementById(id).addEventListener('input', rendreEcheancier));
+  document.getElementById('btn-voir-archives').addEventListener('click', () => {
+    etat.voirArchives = !etat.voirArchives;
+    rendreEcheancier();
+  });
+  document.getElementById('btn-nouvelle-echeance').addEventListener('click', () => ouvrirDlgEcheance(null));
+
+  /* Actions sur les échéances (délégation) */
+  document.getElementById('vue-echeancier').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.fait){
+      const e = etat.echeances.find(x => x.id === cible.dataset.fait);
+      if (e){
+        e.statut = 'archivee';
+        e.faitLe = new Date().toISOString();
+        await dbEcrire('echeances', e);
+        toast('Échéance archivée : ' + e.titre);
+        rendreTout();
+      }
+    } else if (cible.dataset.restaurer){
+      const e = etat.echeances.find(x => x.id === cible.dataset.restaurer);
+      if (e){
+        e.statut = 'active';
+        delete e.faitLe;
+        await dbEcrire('echeances', e);
+        rendreTout();
+      }
+    } else if (cible.dataset.modifEch){
+      const e = etat.echeances.find(x => x.id === cible.dataset.modifEch);
+      if (e) ouvrirDlgEcheance(e);
+    } else if (cible.dataset.supprEch){
+      const e = etat.echeances.find(x => x.id === cible.dataset.supprEch);
+      if (e && confirm('Supprimer définitivement l\'échéance « ' + e.titre + ' » ?')){
+        etat.echeances = etat.echeances.filter(x => x.id !== e.id);
+        await dbSupprimer('echeances', e.id);
+        rendreTout();
+      }
+    }
+  });
+
+  /* Congés */
+  ['recherche-conge', 'filtre-statut-conge'].forEach(id =>
+    document.getElementById(id).addEventListener('input', rendreConges));
+  document.getElementById('btn-nouveau-conge').addEventListener('click', () => ouvrirDlgConge(null));
+  document.getElementById('vue-conges').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.modifConge){
+      const c = etat.conges.find(x => x.id === cible.dataset.modifConge);
+      if (c) ouvrirDlgConge(c);
+    } else if (cible.dataset.supprConge){
+      const c = etat.conges.find(x => x.id === cible.dataset.supprConge);
+      if (c && confirm('Supprimer le congé de ' + c.locataire + ' ? Les échéances liées seront aussi supprimées.')){
+        etat.conges = etat.conges.filter(x => x.id !== c.id);
+        await dbSupprimer('conges', c.id);
+        await supprimerEcheancesLiees(c.id);
+        rendreTout();
+      }
+    }
+  });
+  document.getElementById('vue-conges').addEventListener('change', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.statutConge){
+      const c = etat.conges.find(x => x.id === cible.dataset.statutConge);
+      if (c){
+        c.statut = cible.value;
+        await dbEcrire('conges', c);
+        await syncConge(c);
+        if (c.statut === 'parti') toast('Échéance « Démarrer l\'arrêté de compte » créée.');
+        rendreTout();
+      }
+    }
+  });
+
+  /* Arrêtés */
+  ['recherche-arrete', 'filtre-statut-arrete'].forEach(id =>
+    document.getElementById(id).addEventListener('input', rendreArretes));
+  document.getElementById('btn-nouvel-arrete').addEventListener('click', () => ouvrirDlgArrete(null));
+  document.getElementById('vue-arretes').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.modifArrete){
+      const a = etat.arretes.find(x => x.id === cible.dataset.modifArrete);
+      if (a) ouvrirDlgArrete(a);
+    } else if (cible.dataset.supprArrete){
+      const a = etat.arretes.find(x => x.id === cible.dataset.supprArrete);
+      if (a && confirm('Supprimer l\'arrêté de compte de ' + a.locataire + ' ? Les échéances liées seront aussi supprimées.')){
+        etat.arretes = etat.arretes.filter(x => x.id !== a.id);
+        await dbSupprimer('arretes', a.id);
+        await supprimerEcheancesLiees(a.id);
+        rendreTout();
+      }
+    }
+  });
+  document.getElementById('vue-arretes').addEventListener('change', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.statutArrete){
+      const a = etat.arretes.find(x => x.id === cible.dataset.statutArrete);
+      if (a){
+        a.statut = cible.value;
+        if (a.statut === 'restitue'){
+          a.dateRestitution = a.dateRestitution || todayStr();
+          toast('Dépôt marqué restitué le ' + fmtDate(a.dateRestitution) + ' (modifiable via « Modifier »).');
+        } else {
+          a.dateRestitution = null;
+        }
+        await dbEcrire('arretes', a);
+        await syncArrete(a);
+        rendreTout();
+      }
+    }
+  });
+
+  /* Stats */
+  document.querySelectorAll('#selecteur-periode button').forEach(b =>
+    b.addEventListener('click', () => { etat.granulariteStats = b.dataset.gran; rendreStats(); }));
+  document.getElementById('grille-stats').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.ajout){
+      const entree = {id: uid(), serie: cible.dataset.ajout, date: todayStr(),
+                      valeur: Number(cible.dataset.val) || 1, creeLe: new Date().toISOString()};
+      etat.statsEntries.push(entree);
+      await dbEcrire('statsEntries', entree);
+      rendreStats(); rendreBandeau();
+    } else if (cible.dataset.ajoutMontant){
+      const champ = document.getElementById(cible.dataset.champ);
+      const montant = Number(champ.value);
+      if (!montant || montant <= 0){ champ.focus(); return; }
+      const entree = {id: uid(), serie: cible.dataset.ajoutMontant, date: todayStr(),
+                      valeur: montant, creeLe: new Date().toISOString()};
+      etat.statsEntries.push(entree);
+      await dbEcrire('statsEntries', entree);
+      rendreStats(); rendreBandeau();
+      toast(fmtEuros(montant) + ' ajoutés.');
+    } else if (cible.dataset.annuler){
+      const series = cible.dataset.annuler.split(',');
+      const candidates = etat.statsEntries.filter(x => series.includes(x.serie))
+        .sort((x, y) => (y.creeLe || '').localeCompare(x.creeLe || ''));
+      if (!candidates.length){ toast('Aucune saisie à annuler.'); return; }
+      const derniere = candidates[0];
+      etat.statsEntries = etat.statsEntries.filter(x => x.id !== derniere.id);
+      await dbSupprimer('statsEntries', derniere.id);
+      rendreStats(); rendreBandeau();
+      toast('Dernière saisie annulée.');
+    }
+  });
+  document.getElementById('grille-stats').addEventListener('change', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.objectif){
+      const valeur = Math.max(0, Number(cible.value) || 0);
+      await metaEcrire('objectif:' + cible.dataset.objectif + ':' + etat.granulariteStats, valeur);
+      rendreStats();
+    }
+  });
+
+  /* Dialogues : boutons Annuler */
+  document.querySelectorAll('dialog [data-fermer]').forEach(b =>
+    b.addEventListener('click', () => b.closest('dialog').close()));
+
+  /* Formulaire échéance */
+  document.getElementById('form-echeance').addEventListener('submit', () => { validerEcheance(); });
+
+  /* Formulaire congé */
+  document.getElementById('cg-f-bail').addEventListener('change', () => {
+    document.getElementById('cg-f-duree').value = dureePreavisDefaut();
+    recalculerFinPreavis();
+  });
+  document.getElementById('cg-f-zone').addEventListener('change', () => {
+    document.getElementById('cg-f-duree').value = dureePreavisDefaut();
+    recalculerFinPreavis();
+  });
+  document.getElementById('cg-f-reception').addEventListener('change', recalculerFinPreavis);
+  document.getElementById('cg-f-duree').addEventListener('input', recalculerFinPreavis);
+  document.getElementById('form-conge').addEventListener('submit', () => { validerConge(); });
+
+  /* Formulaire arrêté */
+  document.getElementById('ar-f-retenues').addEventListener('change', () => {
+    majBlocRetenues();
+    recalculerLimiteRestitution();
+  });
+  document.getElementById('ar-f-cles').addEventListener('change', recalculerLimiteRestitution);
+  document.getElementById('ar-f-statut').addEventListener('change', majChampRestitution);
+  document.getElementById('form-arrete').addEventListener('submit', () => { validerArrete(); });
+}
+
+/* ---------------- Démarrage ---------------- */
+(async function demarrer(){
+  try {
+    await ouvrirDB();
+    await chargerEtat();
+  } catch (err){
+    alert('Impossible d\'initialiser le stockage local du navigateur. ' +
+          'Vérifiez que vous n\'êtes pas en navigation privée.');
+    return;
+  }
+  initEvenements();
+  rendreTout();
+})();
+</script>
+</body>
+</html>
