@@ -183,6 +183,36 @@
     font-family:inherit; color:var(--texte-2);
   }
   .selecteur-periode button.actif{background:var(--bleu); color:#fff;}
+  /* ---------- Fiches, frise d'étapes, checklists, journal ---------- */
+  .pastille-orange{background:var(--orange);}
+  .dlg-large{max-width:820px;}
+  .section-fiche{border-top:1px solid var(--bord); margin-top:16px; padding-top:12px;}
+  .section-fiche h4{margin:0 0 8px; font-size:12.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--texte-2);}
+  .section-fiche h4 .normal{text-transform:none; font-weight:400; letter-spacing:0;}
+  .frise{display:flex; gap:5px; flex-wrap:wrap;}
+  .etape-carte{flex:1; min-width:110px; border:1px solid var(--bord); border-radius:8px; padding:7px 8px; background:#fafbfc;}
+  .etape-carte.faite{border-color:#b5dcc6; background:var(--vert-fond);}
+  .etape-carte.courante{border-color:var(--bleu); background:var(--bleu-clair);}
+  .etape-tete{font-size:12.5px; font-weight:600; cursor:pointer; display:block; width:100%;
+    background:none; border:none; text-align:left; padding:0; font-family:inherit; color:var(--texte);}
+  .etape-carte.courante .etape-tete{color:var(--bleu);}
+  .etape-carte label{display:block; font-size:10.5px; color:var(--texte-2); margin-top:5px;}
+  .etape-carte input[type=date]{width:100%; font-size:11px; padding:2px 4px; border:1px solid var(--bord);
+    border-radius:4px; font-family:inherit; background:#fff;}
+  .ligne-checklist{display:flex; align-items:center; gap:8px; padding:3px 0; font-size:13.5px;}
+  .ligne-checklist input[type=checkbox]{width:16px; height:16px; cursor:pointer;}
+  .fait-texte{text-decoration:line-through; color:var(--texte-2);}
+  .ajout-inline{display:flex; gap:8px; margin-top:8px;}
+  .ajout-inline input[type=text]{flex:1; padding:6px 9px; border:1px solid var(--bord); border-radius:6px;
+    font-size:13.5px; font-family:inherit;}
+  .journal-entree{border-left:3px solid var(--bleu-clair); padding:3px 10px; margin-bottom:8px;}
+  .journal-date{font-size:11.5px; color:var(--texte-2);}
+  .journal-texte{font-size:13.5px; white-space:pre-wrap;}
+  tr.dormant td{background:var(--ambre-fond);}
+  .badge-dormant{background:var(--ambre-fond); border:1px solid var(--ambre-bord); color:var(--ambre-texte);}
+  .mini-frise{display:flex; gap:2px; margin-top:4px;}
+  .mini-frise span{width:13px; height:5px; border-radius:2px; background:var(--gris-fond);}
+  .mini-frise span.ok{background:var(--bleu-vif);}
   /* ---------- Divers ---------- */
   #zone-toasts{position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:100;}
   .toast{
@@ -217,6 +247,9 @@
   <button data-vue="echeancier" class="actif">📋 Échéancier <span class="pastille" id="pastille-urgent" style="display:none">0</span></button>
   <button data-vue="conges">📨 Congés locataires</button>
   <button data-vue="arretes">💶 Arrêtés de compte</button>
+  <button data-vue="fins">📁 Fin de gestion</button>
+  <button data-vue="sinistres">🛠 Sinistres <span class="pastille pastille-orange" id="pastille-dormants" style="display:none" title="Sinistres sans action récente">0</span></button>
+  <button data-vue="devis">🧾 Devis</button>
   <button data-vue="stats">📊 Mes stats</button>
 </nav>
 
@@ -289,6 +322,82 @@
     </div>
   </section>
 
+  <!-- ============ VUE FIN DE GESTION ============ -->
+  <section class="vue" id="vue-fins">
+    <div class="barre-outils">
+      <input type="search" id="recherche-fin" placeholder="Rechercher un propriétaire ou une adresse…">
+      <select id="filtre-statut-fin">
+        <option value="">Tous les statuts</option>
+        <option value="a_traiter">À traiter</option>
+        <option value="en_cours">En cours</option>
+        <option value="solde">Soldé</option>
+      </select>
+      <div class="espace"></div>
+      <button class="btn" id="btn-nouvelle-fin">＋ Nouvelle fin de gestion</button>
+    </div>
+    <div class="carte">
+      <div id="liste-fins"></div>
+      <p class="note-bas">Une échéance est créée automatiquement à la date d'effet du mandat, ainsi que les relances intermédiaires demandées. Au passage en « Soldé », l'application propose d'ajouter une « perte de gestion » dans Mes stats (attrition).</p>
+    </div>
+  </section>
+
+  <!-- ============ VUE SINISTRES ============ -->
+  <section class="vue" id="vue-sinistres">
+    <div class="barre-outils">
+      <input type="search" id="recherche-sinistre" placeholder="Rechercher (référence, adresse, locataire, assureur)…">
+      <select id="filtre-etape-sinistre">
+        <option value="">Toutes les étapes</option>
+        <option value="declare">Déclaré</option>
+        <option value="expertise">Expertise</option>
+        <option value="devis">Devis</option>
+        <option value="travaux">Travaux</option>
+        <option value="indemnisation">Indemnisation</option>
+        <option value="cloture">Clôturé</option>
+      </select>
+      <select id="filtre-attente-sinistre">
+        <option value="">En attente de…</option>
+        <option value="expertise">… l'expertise</option>
+        <option value="devis">… du devis</option>
+        <option value="travaux">… des travaux</option>
+        <option value="indemnisation">… de l'indemnisation</option>
+      </select>
+      <select id="filtre-assurance-sinistre">
+        <option value="">Toutes les compagnies</option>
+      </select>
+      <label style="font-size:13px; color:var(--texte-2); display:flex; align-items:center; gap:5px;">Dormant après
+        <input type="number" id="seuil-dormance" min="1" step="1" value="14"
+          style="width:58px; padding:6px 7px; border:1px solid var(--bord); border-radius:6px; font-family:inherit;"> j
+      </label>
+      <div class="espace"></div>
+      <button class="btn" id="btn-nouveau-sinistre">＋ Nouveau sinistre</button>
+    </div>
+    <div class="carte">
+      <div id="liste-sinistres"></div>
+      <p class="note-bas">La « date de prochaine relance » de chaque sinistre alimente automatiquement l'échéancier central : tant qu'elle est renseignée, le dossier ne peut pas être oublié. Les dossiers sans action récente sont surlignés en jaune.</p>
+    </div>
+  </section>
+
+  <!-- ============ VUE DEVIS ============ -->
+  <section class="vue" id="vue-devis">
+    <div class="barre-outils">
+      <input type="search" id="recherche-devis" placeholder="Rechercher (objet, entreprise, propriétaire, adresse)…">
+      <select id="filtre-statut-devis">
+        <option value="">Tous les statuts</option>
+        <option value="demande">Demandé</option>
+        <option value="recu">Reçu</option>
+        <option value="propose">Proposé au propriétaire</option>
+        <option value="accepte">Accepté</option>
+        <option value="refuse">Refusé</option>
+      </select>
+      <div class="espace"></div>
+      <button class="btn" id="btn-nouveau-devis">＋ Nouveau devis</button>
+    </div>
+    <div class="carte">
+      <div id="liste-devis"></div>
+      <p class="note-bas">Des échéances de relance sont créées automatiquement : relance de l'entreprise tant que le devis n'est pas reçu, relance du propriétaire tant qu'il n'a pas répondu à la proposition.</p>
+    </div>
+  </section>
+
   <!-- ============ VUE STATS ============ -->
   <section class="vue" id="vue-stats">
     <div class="barre-outils">
@@ -321,6 +430,9 @@
           <select id="ech-f-type">
             <option>Congé</option>
             <option>Arrêté de compte</option>
+            <option>Fin de gestion</option>
+            <option>Sinistre</option>
+            <option>Devis</option>
             <option>État des lieux</option>
             <option>Visite</option>
             <option>Administratif</option>
@@ -486,6 +598,262 @@
   </form>
 </dialog>
 
+<!-- ============ DIALOGUE FIN DE GESTION ============ -->
+<dialog id="dlg-fin">
+  <div class="dlg-tete" id="dlg-fin-titre">Nouvelle fin de gestion</div>
+  <form method="dialog" id="form-fin">
+    <div class="dlg-corps">
+      <div class="deux-col">
+        <div class="champ">
+          <label for="fg-f-proprietaire">Nom du propriétaire (mandant) *</label>
+          <input type="text" id="fg-f-proprietaire" required maxlength="120">
+        </div>
+        <div class="champ">
+          <label for="fg-f-adresse">Adresse du ou des lots concernés *</label>
+          <input type="text" id="fg-f-adresse" required maxlength="200">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="fg-f-reception">Date de réception de la résiliation *</label>
+          <input type="date" id="fg-f-reception" required>
+        </div>
+        <div class="champ">
+          <label for="fg-f-motif">Motif</label>
+          <select id="fg-f-motif">
+            <option value="vente">Vente</option>
+            <option value="changement">Changement de gestionnaire</option>
+            <option value="autre">Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="fg-f-effet">Date d'effet (fin du préavis du mandat) *</label>
+          <input type="date" id="fg-f-effet" required>
+        </div>
+        <div class="champ">
+          <label for="fg-f-locataire">Locataire en place</label>
+          <select id="fg-f-locataire">
+            <option value="oui">Oui</option>
+            <option value="non">Non</option>
+          </select>
+        </div>
+      </div>
+      <div class="champ">
+        <label for="fg-f-relances">Relances intermédiaires avant la date d'effet (en jours, séparés par des virgules)</label>
+        <input type="text" id="fg-f-relances" maxlength="60" placeholder="Ex. : 30, 7 — laisser vide pour aucune relance">
+        <div class="aide">Chaque valeur crée une échéance de relance ce nombre de jours avant la date d'effet.</div>
+      </div>
+      <div class="champ" id="champ-statut-fin" style="display:none">
+        <label for="fg-f-statut">Statut</label>
+        <select id="fg-f-statut">
+          <option value="a_traiter">À traiter</option>
+          <option value="en_cours">En cours</option>
+          <option value="solde">Soldé</option>
+        </select>
+      </div>
+      <div class="section-fiche">
+        <h4>Checklist des actions de clôture</h4>
+        <div id="fin-checklist"></div>
+        <div class="ajout-inline">
+          <input type="text" id="fin-checklist-nouvelle" maxlength="120" placeholder="Ajouter une action…">
+          <button type="button" class="btn btn-secondaire btn-petit" id="fin-checklist-btn">Ajouter</button>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="button" class="btn btn-secondaire" data-fermer>Annuler</button>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ DIALOGUE SINISTRE (FICHE) ============ -->
+<dialog id="dlg-sinistre" class="dlg-large">
+  <div class="dlg-tete" id="dlg-sinistre-titre">Nouveau sinistre</div>
+  <form method="dialog" id="form-sinistre">
+    <div class="dlg-corps">
+      <div class="deux-col">
+        <div class="champ">
+          <label for="sn-f-reference">Référence du sinistre *</label>
+          <input type="text" id="sn-f-reference" required maxlength="60" placeholder="Ex. : SIN-2026-014">
+        </div>
+        <div class="champ">
+          <label for="sn-f-type">Type</label>
+          <select id="sn-f-type">
+            <option>Dégât des eaux</option>
+            <option>Incendie</option>
+            <option>Bris de glace</option>
+            <option>Vol / vandalisme</option>
+            <option>Catastrophe naturelle</option>
+            <option>Autre</option>
+          </select>
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="sn-f-declaration">Date de déclaration *</label>
+          <input type="date" id="sn-f-declaration" required>
+        </div>
+        <div class="champ">
+          <label for="sn-f-montant">Montant estimé (€)</label>
+          <input type="number" id="sn-f-montant" min="0" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="sn-f-adresse">Adresse du lot *</label>
+          <input type="text" id="sn-f-adresse" required maxlength="160">
+        </div>
+        <div class="champ">
+          <label for="sn-f-locataire">Locataire concerné</label>
+          <input type="text" id="sn-f-locataire" maxlength="120">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="sn-f-proprietaire">Propriétaire / mandant</label>
+          <input type="text" id="sn-f-proprietaire" maxlength="120">
+        </div>
+        <div class="champ">
+          <label for="sn-f-assurance">Compagnie d'assurance</label>
+          <input type="text" id="sn-f-assurance" maxlength="120">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="sn-f-dossier">N° de dossier assurance</label>
+          <input type="text" id="sn-f-dossier" maxlength="60">
+        </div>
+        <div></div>
+      </div>
+      <div class="section-fiche">
+        <h4>Prochaine relance <span class="normal">— alimente automatiquement l'échéancier</span></h4>
+        <div class="deux-col">
+          <div class="champ">
+            <label for="sn-f-action">Prochaine action</label>
+            <input type="text" id="sn-f-action" maxlength="160" placeholder="Ex. : relancer l'expert pour le PV">
+          </div>
+          <div class="champ">
+            <label for="sn-f-relance">Date de prochaine relance</label>
+            <input type="date" id="sn-f-relance">
+          </div>
+        </div>
+      </div>
+      <div id="sin-sections" style="display:none">
+        <div class="section-fiche">
+          <h4>Avancement du dossier <span class="normal">— cliquez sur le nom d'une étape pour la définir comme étape en cours</span></h4>
+          <div class="frise" id="sin-frise"></div>
+        </div>
+        <div class="section-fiche">
+          <h4>Pièces du dossier</h4>
+          <div id="sin-pieces"></div>
+          <div class="ajout-inline">
+            <input type="text" id="sin-piece-nouvelle" maxlength="120" placeholder="Ajouter une pièce…">
+            <button type="button" class="btn btn-secondaire btn-petit" id="sin-piece-btn">Ajouter</button>
+          </div>
+        </div>
+        <div class="section-fiche">
+          <h4>Journal d'actions</h4>
+          <div id="sin-journal"></div>
+          <div class="ajout-inline">
+            <input type="text" id="sin-journal-texte" maxlength="500" placeholder="Noter une action, un appel, un courrier…">
+            <button type="button" class="btn btn-secondaire btn-petit" id="sin-journal-btn">Ajouter la note</button>
+          </div>
+        </div>
+        <div class="section-fiche">
+          <h4>Devis liés</h4>
+          <div id="sin-devis-lies"></div>
+          <div style="margin-top:8px">
+            <button type="button" class="btn btn-secondaire btn-petit" id="sin-devis-creer">＋ Créer un devis lié</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="button" class="btn btn-secondaire" data-fermer>Fermer</button>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ DIALOGUE DEVIS ============ -->
+<dialog id="dlg-devis">
+  <div class="dlg-tete" id="dlg-devis-titre">Nouveau devis</div>
+  <form method="dialog" id="form-devis">
+    <div class="dlg-corps">
+      <div class="deux-col">
+        <div class="champ">
+          <label for="dv-f-objet">Description / objet des travaux *</label>
+          <input type="text" id="dv-f-objet" required maxlength="160" placeholder="Ex. : reprise peinture après dégât des eaux">
+        </div>
+        <div class="champ">
+          <label for="dv-f-entreprise">Entreprise sollicitée *</label>
+          <input type="text" id="dv-f-entreprise" required maxlength="120">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="dv-f-adresse">Adresse du lot</label>
+          <input type="text" id="dv-f-adresse" maxlength="160">
+        </div>
+        <div class="champ">
+          <label for="dv-f-proprietaire">Propriétaire concerné</label>
+          <input type="text" id="dv-f-proprietaire" maxlength="120">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="dv-f-locataire">Locataire concerné</label>
+          <input type="text" id="dv-f-locataire" maxlength="120">
+        </div>
+        <div class="champ">
+          <label for="dv-f-demande">Date de la demande *</label>
+          <input type="date" id="dv-f-demande" required>
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="dv-f-montant">Montant (€) — une fois le devis reçu</label>
+          <input type="number" id="dv-f-montant" min="0" step="0.01" placeholder="0,00">
+        </div>
+        <div class="champ">
+          <label for="dv-f-delai">Relance après (jours)</label>
+          <input type="number" id="dv-f-delai" min="1" step="1" value="7">
+          <div class="aide">Délai des relances automatiques (entreprise puis propriétaire).</div>
+        </div>
+      </div>
+      <div class="champ">
+        <label for="dv-f-sinistre">Sinistre concerné (facultatif)</label>
+        <select id="dv-f-sinistre">
+          <option value="">Aucun</option>
+        </select>
+      </div>
+      <div class="deux-col" id="bloc-statut-devis" style="display:none">
+        <div class="champ">
+          <label for="dv-f-statut">Statut</label>
+          <select id="dv-f-statut">
+            <option value="demande">Demandé</option>
+            <option value="recu">Reçu</option>
+            <option value="propose">Proposé au propriétaire</option>
+            <option value="accepte">Accepté</option>
+            <option value="refuse">Refusé</option>
+          </select>
+        </div>
+        <div class="champ" id="champ-date-proposition" style="display:none">
+          <label for="dv-f-proposition">Date de proposition au propriétaire</label>
+          <input type="date" id="dv-f-proposition">
+        </div>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="button" class="btn btn-secondaire" data-fermer>Annuler</button>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="zone-toasts"></div>
 
 <script>
@@ -534,8 +902,8 @@ function toast(msg){
 }
 
 /* ---------------- Base de données locale (IndexedDB) ---------------- */
-const NOM_DB = 'gestion-locative', VERSION_DB = 1;
-const MAGASINS = ['echeances', 'conges', 'arretes', 'statsEntries'];
+const NOM_DB = 'gestion-locative', VERSION_DB = 2;
+const MAGASINS = ['echeances', 'conges', 'arretes', 'statsEntries', 'finsGestion', 'sinistres', 'devis'];
 let db = null;
 
 function ouvrirDB(){
@@ -582,7 +950,8 @@ function metaEcrire(cle, valeur){
 
 /* ---------------- État en mémoire ---------------- */
 const etat = {
-  echeances: [], conges: [], arretes: [], statsEntries: [], meta: {},
+  echeances: [], conges: [], arretes: [], statsEntries: [],
+  finsGestion: [], sinistres: [], devis: [], meta: {},
   granulariteStats: 'mois',
   voirArchives: false
 };
@@ -592,6 +961,9 @@ async function chargerEtat(){
   etat.conges = await dbTout('conges');
   etat.arretes = await dbTout('arretes');
   etat.statsEntries = await dbTout('statsEntries');
+  etat.finsGestion = await dbTout('finsGestion');
+  etat.sinistres = await dbTout('sinistres');
+  etat.devis = await dbTout('devis');
   const lignesMeta = await dbTout('meta');
   etat.meta = {};
   lignesMeta.forEach(l => { etat.meta[l.cle] = l.valeur; });
@@ -659,6 +1031,110 @@ async function syncArrete(a){
     type: 'Arrêté de compte', dossier,
     dateEcheance: addDaysStr(a.dateLimite, -delai),
     critique: true, sourceType: 'arrete', sourceId: a.id
+  }, false);
+}
+
+/* ---- Fin de gestion ---- */
+const LIBELLE_STATUT_FIN = {a_traiter:'À traiter', en_cours:'En cours', solde:'Soldé'};
+const LIBELLE_MOTIF_FIN = {vente:'Vente', changement:'Changement de gestionnaire', autre:'Autre'};
+const CHECKLIST_FIN_DEFAUT = ['Arrêté de compte mandant', 'Restitution des fonds', 'Transmission du dossier au repreneur'];
+
+async function syncFinGestion(f){
+  const dossier = f.proprietaire + ' — ' + f.adresse;
+  const actif = f.statut !== 'solde';
+  await ensureAuto('fin:' + f.id + ':effet', actif, {
+    titre: "Fin de mandat — date d'effet (" + LIBELLE_MOTIF_FIN[f.motif] + ')',
+    type: 'Fin de gestion', dossier,
+    dateEcheance: f.dateEffet,
+    critique: true, sourceType: 'finGestion', sourceId: f.id
+  }, false);
+  /* relances intermédiaires : une échéance par valeur "J-x" demandée */
+  const jours = f.relances || [];
+  const prefixe = 'fin:' + f.id + ':relance:';
+  const obsoletes = etat.echeances.filter(e =>
+    e.cleAuto && e.cleAuto.startsWith(prefixe) && e.statut === 'active' &&
+    !jours.includes(Number(e.cleAuto.slice(prefixe.length))));
+  for (const e of obsoletes){
+    etat.echeances = etat.echeances.filter(x => x.id !== e.id);
+    await dbSupprimer('echeances', e.id);
+  }
+  for (const j of jours){
+    await ensureAuto(prefixe + j, actif, {
+      titre: 'Relance fin de gestion (J-' + j + ')',
+      type: 'Fin de gestion', dossier,
+      dateEcheance: addDaysStr(f.dateEffet, -j),
+      critique: false, sourceType: 'finGestion', sourceId: f.id
+    }, false);
+  }
+}
+
+/* ---- Sinistres ---- */
+const ETAPES_SINISTRE = [
+  {id:'declare', libelle:'Déclaré'},
+  {id:'expertise', libelle:'Expertise'},
+  {id:'devis', libelle:'Devis'},
+  {id:'travaux', libelle:'Travaux'},
+  {id:'indemnisation', libelle:'Indemnisation'},
+  {id:'cloture', libelle:'Clôturé'}
+];
+const LIBELLE_ETAPE = {};
+ETAPES_SINISTRE.forEach(e => { LIBELLE_ETAPE[e.id] = e.libelle; });
+const PIECES_DEFAUT = ['Déclaration de sinistre', 'Photos', "PV d'expertise", 'Devis'];
+
+function touchSinistre(s){ s.derniereAction = new Date().toISOString(); }
+function derniereActionSinistre(s){
+  let max = s.derniereAction || s.creeLe || '';
+  (s.journal || []).forEach(j => { if (j.date > max) max = j.date; });
+  return max;
+}
+function joursSansAction(s){
+  const da = derniereActionSinistre(s);
+  return da ? Math.floor((Date.now() - new Date(da).getTime()) / 86400000) : 0;
+}
+function seuilDormance(){ return Math.max(1, Number(etat.meta['seuilDormance']) || 14); }
+function estDormant(s){ return s.etape !== 'cloture' && joursSansAction(s) > seuilDormance(); }
+
+/* La date de prochaine relance alimente l'échéancier. La clé inclut la date :
+   archiver la relance dans l'échéancier puis saisir une nouvelle date sur la
+   fiche crée bien une nouvelle échéance. */
+async function syncSinistre(s){
+  const prefixe = 'sinistre:' + s.id + ':relance:';
+  const cle = prefixe + (s.dateRelance || '');
+  const obsoletes = etat.echeances.filter(e =>
+    e.cleAuto && e.cleAuto.startsWith(prefixe) && e.cleAuto !== cle && e.statut === 'active');
+  for (const e of obsoletes){
+    etat.echeances = etat.echeances.filter(x => x.id !== e.id);
+    await dbSupprimer('echeances', e.id);
+  }
+  await ensureAuto(cle, !!s.dateRelance && s.etape !== 'cloture', {
+    titre: 'Relance sinistre ' + s.reference + (s.prochaineAction ? ' — ' + s.prochaineAction : ''),
+    type: 'Sinistre',
+    dossier: s.adresse + (s.locataire ? ' — ' + s.locataire : ''),
+    dateEcheance: s.dateRelance,
+    critique: false, sourceType: 'sinistre', sourceId: s.id
+  }, false);
+}
+
+/* ---- Devis ---- */
+const LIBELLE_STATUT_DEVIS = {
+  demande:'Demandé', recu:'Reçu', propose:'Proposé au propriétaire',
+  accepte:'Accepté', refuse:'Refusé'
+};
+
+async function syncDevis(d){
+  const dossier = (d.adresse || '') + (d.proprietaire ? (d.adresse ? ' — ' : '') + d.proprietaire : '');
+  const delai = Math.max(1, Number(d.delaiRelance) || 7);
+  await ensureAuto('devis:' + d.id + ':entreprise', d.statut === 'demande', {
+    titre: "Relancer l'entreprise " + d.entreprise + ' (devis : ' + d.objet + ')',
+    type: 'Devis', dossier,
+    dateEcheance: addDaysStr(d.dateDemande, delai),
+    critique: false, sourceType: 'devis', sourceId: d.id
+  }, false);
+  await ensureAuto('devis:' + d.id + ':proprietaire', d.statut === 'propose', {
+    titre: 'Relancer le propriétaire' + (d.proprietaire ? ' ' + d.proprietaire : '') + ' (devis : ' + d.objet + ')',
+    type: 'Devis', dossier,
+    dateEcheance: addDaysStr(d.dateProposition || todayStr(), delai),
+    critique: false, sourceType: 'devis', sourceId: d.id
   }, false);
 }
 
@@ -839,6 +1315,173 @@ function rendreArretes(){
     lignes + '</tbody></table>';
 }
 
+/* ---------------- Rendu : fins de gestion ---------------- */
+function rendreFins(){
+  const recherche = document.getElementById('recherche-fin').value.trim().toLowerCase();
+  const fStatut = document.getElementById('filtre-statut-fin').value;
+  const liste = etat.finsGestion
+    .filter(f => (!recherche || (f.proprietaire + ' ' + f.adresse).toLowerCase().includes(recherche)) &&
+                 (!fStatut || f.statut === fStatut))
+    .sort((a, b) => a.dateEffet.localeCompare(b.dateEffet));
+
+  if (!liste.length){
+    document.getElementById('liste-fins').innerHTML =
+      '<div class="vide">Aucune fin de gestion enregistrée. Cliquez sur « ＋ Nouvelle fin de gestion » pour commencer.</div>';
+    return;
+  }
+  const lignes = liste.map(f => {
+    const d = diffJours(f.dateEffet);
+    const badge = f.statut === 'solde' ? ''
+      : d < 0 ? ' <span class="badge badge-haute">échue</span>'
+      : d <= 14 ? ' <span class="badge badge-moyenne">J-' + d + '</span>' : '';
+    const cl = f.checklist || [];
+    const faits = cl.filter(x => x.fait).length;
+    const checklist = cl.length
+      ? faits + ' / ' + cl.length + (faits === cl.length ? ' <span class="badge badge-vert">complète</span>' : '')
+      : '—';
+    const options = Object.keys(LIBELLE_STATUT_FIN).map(s =>
+      '<option value="' + s + '"' + (f.statut === s ? ' selected' : '') + '>' + LIBELLE_STATUT_FIN[s] + '</option>').join('');
+    return '<tr>' +
+      '<td><div class="nom-loc">' + echap(f.proprietaire) + '</div><div class="sous-info">' + echap(f.adresse) + '</div></td>' +
+      '<td>' + fmtDate(f.dateReception) + '<div class="sous-info">' + LIBELLE_MOTIF_FIN[f.motif] + '</div></td>' +
+      '<td><strong>' + fmtDate(f.dateEffet) + '</strong>' + badge + '</td>' +
+      '<td>' + (f.locataireEnPlace ? 'Oui' : 'Non') + '</td>' +
+      '<td>' + checklist + '</td>' +
+      '<td><select data-statut-fin="' + f.id + '">' + options + '</select></td>' +
+      '<td class="cell-actions">' +
+        '<button class="btn btn-secondaire btn-petit" data-modif-fin="' + f.id + '">Modifier</button> ' +
+        '<button class="btn btn-danger btn-petit" data-suppr-fin="' + f.id + '">Supprimer</button></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('liste-fins').innerHTML =
+    '<table><thead><tr><th>Mandant / lots</th><th>Résiliation reçue</th><th>Date d\'effet</th>' +
+    '<th>Locataire en place</th><th>Checklist</th><th>Statut</th><th></th></tr></thead><tbody>' +
+    lignes + '</tbody></table>';
+}
+
+/* ---------------- Rendu : sinistres ---------------- */
+function rendreSinistres(){
+  const recherche = document.getElementById('recherche-sinistre').value.trim().toLowerCase();
+  const fEtape = document.getElementById('filtre-etape-sinistre').value;
+  const fAttente = document.getElementById('filtre-attente-sinistre').value;
+  const fAssur = document.getElementById('filtre-assurance-sinistre').value;
+
+  const liste = etat.sinistres.filter(s => {
+    if (recherche && !((s.reference + ' ' + s.adresse + ' ' + (s.locataire || '') + ' ' +
+        (s.proprietaire || '') + ' ' + (s.assurance || '')).toLowerCase().includes(recherche))) return false;
+    if (fEtape && s.etape !== fEtape) return false;
+    if (fAttente){
+      const et = (s.etapes || {})[fAttente];
+      if (s.etape !== fAttente || (et && et.realisee)) return false;
+    }
+    if (fAssur && (s.assurance || '') !== fAssur) return false;
+    return true;
+  }).sort((a, b) => {
+    const ca = a.etape === 'cloture' ? 1 : 0, cb = b.etape === 'cloture' ? 1 : 0;
+    if (ca !== cb) return ca - cb;
+    return (a.dateRelance || '9999-12-31').localeCompare(b.dateRelance || '9999-12-31');
+  });
+
+  /* liste des compagnies pour le filtre */
+  const compagnies = [...new Set(etat.sinistres.map(s => s.assurance).filter(Boolean))].sort();
+  const sel = document.getElementById('filtre-assurance-sinistre');
+  const valeur = sel.value;
+  sel.innerHTML = '<option value="">Toutes les compagnies</option>' +
+    compagnies.map(c => '<option' + (c === valeur ? ' selected' : '') + '>' + echap(c) + '</option>').join('');
+
+  /* pastille des dossiers dormants (hors filtres) */
+  const dormants = etat.sinistres.filter(estDormant).length;
+  const past = document.getElementById('pastille-dormants');
+  past.style.display = dormants ? '' : 'none';
+  past.textContent = dormants;
+
+  if (!liste.length){
+    document.getElementById('liste-sinistres').innerHTML =
+      '<div class="vide">Aucun sinistre ne correspond. Cliquez sur « ＋ Nouveau sinistre » pour créer un dossier.</div>';
+    return;
+  }
+  const lignes = liste.map(s => {
+    const idx = ETAPES_SINISTRE.findIndex(e => e.id === s.etape);
+    const dormant = estDormant(s);
+    const miniFrise = '<div class="mini-frise">' +
+      ETAPES_SINISTRE.map((e, i) => '<span class="' + (i <= idx ? 'ok' : '') + '" title="' + e.libelle + '"></span>').join('') +
+      '</div>';
+    let relance = '<span class="sous-info">Aucune relance planifiée</span>';
+    if (s.etape === 'cloture'){
+      relance = '<span class="badge badge-vert">Clôturé</span>';
+    } else if (s.dateRelance){
+      const d = diffJours(s.dateRelance);
+      const badge = d < 0 ? ' <span class="badge badge-haute">' + Math.abs(d) + ' j de retard</span>'
+        : d === 0 ? ' <span class="badge badge-moyenne">aujourd\'hui</span>' : '';
+      relance = (s.prochaineAction ? echap(s.prochaineAction) + '<br>' : '') +
+        '<strong>' + fmtDate(s.dateRelance) + '</strong>' + badge;
+    } else {
+      relance = '<span class="badge badge-moyenne">⚠ pas de relance planifiée</span>';
+    }
+    const badgeDormant = dormant
+      ? '<div><span class="badge badge-dormant">💤 ' + joursSansAction(s) + ' j sans action</span></div>' : '';
+    return '<tr' + (dormant ? ' class="dormant"' : '') + '>' +
+      '<td><div class="nom-loc">' + echap(s.reference) + '</div><div class="sous-info">' + echap(s.type) + '</div>' + badgeDormant + '</td>' +
+      '<td>' + echap(s.adresse) +
+        '<div class="sous-info">' + (s.locataire ? echap(s.locataire) : '') +
+        (s.proprietaire ? (s.locataire ? ' / ' : '') + echap(s.proprietaire) : '') + '</div></td>' +
+      '<td>' + (s.assurance ? echap(s.assurance) : '—') +
+        (s.numeroDossier ? '<div class="sous-info">n° ' + echap(s.numeroDossier) + '</div>' : '') + '</td>' +
+      '<td><span class="badge badge-type">' + LIBELLE_ETAPE[s.etape] + '</span>' + miniFrise + '</td>' +
+      '<td>' + relance + '</td>' +
+      '<td>' + (s.montantEstime ? fmtEuros(s.montantEstime) : '—') + '</td>' +
+      '<td class="cell-actions">' +
+        '<button class="btn btn-secondaire btn-petit" data-ouvrir-sinistre="' + s.id + '">Ouvrir la fiche</button> ' +
+        '<button class="btn btn-danger btn-petit" data-suppr-sinistre="' + s.id + '">Supprimer</button></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('liste-sinistres').innerHTML =
+    '<table><thead><tr><th>Référence</th><th>Lot / personnes</th><th>Assurance</th>' +
+    '<th>Étape</th><th>Prochaine action / relance</th><th>Montant estimé</th><th></th></tr></thead><tbody>' +
+    lignes + '</tbody></table>';
+}
+
+/* ---------------- Rendu : devis ---------------- */
+function rendreDevis(){
+  const recherche = document.getElementById('recherche-devis').value.trim().toLowerCase();
+  const fStatut = document.getElementById('filtre-statut-devis').value;
+  const liste = etat.devis
+    .filter(d => (!recherche || (d.objet + ' ' + d.entreprise + ' ' + (d.proprietaire || '') + ' ' +
+                  (d.adresse || '')).toLowerCase().includes(recherche)) &&
+                 (!fStatut || d.statut === fStatut))
+    .sort((a, b) => (b.dateDemande || '').localeCompare(a.dateDemande || ''));
+
+  if (!liste.length){
+    document.getElementById('liste-devis').innerHTML =
+      '<div class="vide">Aucun devis enregistré. Cliquez sur « ＋ Nouveau devis » pour commencer.</div>';
+    return;
+  }
+  const lignes = liste.map(d => {
+    const sinistre = d.sinistreId ? etat.sinistres.find(s => s.id === d.sinistreId) : null;
+    const options = Object.keys(LIBELLE_STATUT_DEVIS).map(s =>
+      '<option value="' + s + '"' + (d.statut === s ? ' selected' : '') + '>' + LIBELLE_STATUT_DEVIS[s] + '</option>').join('');
+    const proposition = d.dateProposition && (d.statut === 'propose' || d.statut === 'accepte' || d.statut === 'refuse')
+      ? '<div class="sous-info">proposé le ' + fmtDate(d.dateProposition) + '</div>' : '';
+    return '<tr>' +
+      '<td><div class="nom-loc">' + echap(d.objet) + '</div><div class="sous-info">' + echap(d.entreprise) + '</div></td>' +
+      '<td>' + (d.adresse ? echap(d.adresse) : '—') +
+        '<div class="sous-info">' + (d.proprietaire ? echap(d.proprietaire) : '') +
+        (d.locataire ? (d.proprietaire ? ' / ' : '') + echap(d.locataire) : '') + '</div></td>' +
+      '<td>' + fmtDate(d.dateDemande) + '</td>' +
+      '<td>' + (d.montant ? fmtEuros(d.montant) : '—') + '</td>' +
+      '<td>' + (sinistre ? '<span class="badge badge-type">' + echap(sinistre.reference) + '</span>' : '—') + '</td>' +
+      '<td><select data-statut-devis="' + d.id + '">' + options + '</select>' + proposition + '</td>' +
+      '<td class="cell-actions">' +
+        '<button class="btn btn-secondaire btn-petit" data-modif-devis="' + d.id + '">Modifier</button> ' +
+        '<button class="btn btn-danger btn-petit" data-suppr-devis="' + d.id + '">Supprimer</button></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('liste-devis').innerHTML =
+    '<table><thead><tr><th>Objet / entreprise</th><th>Dossier</th><th>Demandé le</th>' +
+    '<th>Montant</th><th>Sinistre lié</th><th>Statut</th><th></th></tr></thead><tbody>' +
+    lignes + '</tbody></table>';
+}
+
 /* ---------------- Stats ---------------- */
 const KPIS = [
   {id:'edl_entree', titre:"États des lieux d'entrée réalisés", type:'compte', series:['edl_entree']},
@@ -1013,6 +1656,9 @@ function rendreTout(){
   rendreEcheancier();
   rendreConges();
   rendreArretes();
+  rendreFins();
+  rendreSinistres();
+  rendreDevis();
   rendreStats();
   rendreBandeau();
 }
@@ -1021,13 +1667,16 @@ function rendreTout(){
 async function exporterDonnees(){
   const donnees = {
     application: 'dashboard-gestion-locative',
-    version: 1,
+    version: 2,
     exporteLe: new Date().toISOString(),
     donnees: {
       echeances: etat.echeances,
       conges: etat.conges,
       arretes: etat.arretes,
       statsEntries: etat.statsEntries,
+      finsGestion: etat.finsGestion,
+      sinistres: etat.sinistres,
+      devis: etat.devis,
       meta: Object.keys(etat.meta).map(cle => ({cle, valeur: etat.meta[cle]}))
     }
   };
@@ -1064,6 +1713,9 @@ async function importerDonnees(fichier){
   for (const c of (d.conges || [])) await dbEcrire('conges', c);
   for (const a of (d.arretes || [])) await dbEcrire('arretes', a);
   for (const s of (d.statsEntries || [])) await dbEcrire('statsEntries', s);
+  for (const f of (d.finsGestion || [])) await dbEcrire('finsGestion', f);
+  for (const s of (d.sinistres || [])) await dbEcrire('sinistres', s);
+  for (const v of (d.devis || [])) await dbEcrire('devis', v);
   for (const l of (d.meta || [])) await dbEcrire('meta', l);
   await chargerEtat();
   rendreTout();
@@ -1262,6 +1914,289 @@ async function validerArrete(){
   rendreTout();
 }
 
+/* ---------------- Dialogues : fin de gestion ---------------- */
+let finEnEdition = null;
+let checklistFinTravail = [];
+
+function rendreChecklistFin(){
+  document.getElementById('fin-checklist').innerHTML = checklistFinTravail.length
+    ? checklistFinTravail.map((c, i) =>
+        '<div class="ligne-checklist"><input type="checkbox" data-fin-coche="' + i + '"' + (c.fait ? ' checked' : '') + '>' +
+        '<span style="flex:1" class="' + (c.fait ? 'fait-texte' : '') + '">' + echap(c.libelle) + '</span>' +
+        '<button type="button" class="btn btn-danger btn-petit" data-fin-suppr="' + i + '">✕</button></div>').join('')
+    : '<div class="vide">Aucune action dans la checklist.</div>';
+}
+
+function ouvrirDlgFin(f){
+  finEnEdition = f || null;
+  document.getElementById('dlg-fin-titre').textContent = f ? 'Modifier la fin de gestion' : 'Nouvelle fin de gestion';
+  document.getElementById('fg-f-proprietaire').value = f ? f.proprietaire : '';
+  document.getElementById('fg-f-adresse').value = f ? f.adresse : '';
+  document.getElementById('fg-f-reception').value = f ? f.dateReception : todayStr();
+  document.getElementById('fg-f-motif').value = f ? f.motif : 'vente';
+  document.getElementById('fg-f-effet').value = f ? f.dateEffet : '';
+  document.getElementById('fg-f-locataire').value = f ? (f.locataireEnPlace ? 'oui' : 'non') : 'non';
+  document.getElementById('fg-f-relances').value = f ? (f.relances || []).join(', ') : '30, 7';
+  document.getElementById('champ-statut-fin').style.display = f ? '' : 'none';
+  if (f) document.getElementById('fg-f-statut').value = f.statut;
+  checklistFinTravail = f
+    ? (f.checklist || []).map(c => ({libelle: c.libelle, fait: !!c.fait}))
+    : CHECKLIST_FIN_DEFAUT.map(l => ({libelle: l, fait: false}));
+  rendreChecklistFin();
+  document.getElementById('dlg-fin').showModal();
+}
+
+async function proposerPerteGestion(){
+  if (confirm('Fin de gestion soldée. Ajouter 1 « perte de gestion » dans Mes stats (attrition du portefeuille) ?')){
+    const entree = {id: uid(), serie: 'pertes', date: todayStr(), valeur: 1, creeLe: new Date().toISOString()};
+    etat.statsEntries.push(entree);
+    await dbEcrire('statsEntries', entree);
+    toast('Perte de gestion comptabilisée dans « Mes stats ».');
+  }
+}
+
+async function validerFin(){
+  const proprietaire = document.getElementById('fg-f-proprietaire').value.trim();
+  const adresse = document.getElementById('fg-f-adresse').value.trim();
+  const reception = document.getElementById('fg-f-reception').value;
+  const effet = document.getElementById('fg-f-effet').value;
+  if (!proprietaire || !adresse || !reception || !effet) return;
+  const relances = document.getElementById('fg-f-relances').value
+    .split(',').map(x => Math.round(Number(x.trim())))
+    .filter(x => !isNaN(x) && x > 0);
+  const donnees = {
+    proprietaire, adresse,
+    dateReception: reception,
+    motif: document.getElementById('fg-f-motif').value,
+    dateEffet: effet,
+    locataireEnPlace: document.getElementById('fg-f-locataire').value === 'oui',
+    relances: [...new Set(relances)].sort((a, b) => b - a),
+    checklist: checklistFinTravail
+  };
+  let f, soldee = false;
+  if (finEnEdition){
+    f = finEnEdition;
+    const statutAvant = f.statut;
+    Object.assign(f, donnees, {statut: document.getElementById('fg-f-statut').value});
+    soldee = f.statut === 'solde' && statutAvant !== 'solde';
+    toast('Fin de gestion modifiée.');
+  } else {
+    f = Object.assign({id: uid(), statut: 'a_traiter', creeLe: new Date().toISOString()}, donnees);
+    etat.finsGestion.push(f);
+    toast('Fin de gestion enregistrée. Les échéances ont été créées.');
+  }
+  await dbEcrire('finsGestion', f);
+  await syncFinGestion(f);
+  if (soldee) await proposerPerteGestion();
+  rendreTout();
+}
+
+/* ---------------- Dialogues : sinistre (fiche) ---------------- */
+let sinistreEnEdition = null;
+
+function rendreFicheSinistre(){
+  const s = sinistreEnEdition;
+  if (!s) return;
+  /* Frise des étapes */
+  const idx = ETAPES_SINISTRE.findIndex(e => e.id === s.etape);
+  document.getElementById('sin-frise').innerHTML = ETAPES_SINISTRE.map((et, i) => {
+    const d = (s.etapes || {})[et.id] || {};
+    let dates = '';
+    if (et.id === 'declare'){
+      dates = '<label>Réalisée</label><input type="date" value="' + (s.dateDeclaration || '') + '" disabled>';
+    } else {
+      if (et.id !== 'cloture'){
+        dates += '<label>Prévue</label><input type="date" data-etape="' + et.id + '" data-champ="prevue" value="' + (d.prevue || '') + '">';
+      }
+      dates += '<label>Réalisée</label><input type="date" data-etape="' + et.id + '" data-champ="realisee" value="' + (d.realisee || '') + '">';
+    }
+    const cls = i < idx ? ' faite' : i === idx ? ' courante' : '';
+    return '<div class="etape-carte' + cls + '">' +
+      '<button type="button" class="etape-tete" data-choisir-etape="' + et.id + '" title="Définir comme étape en cours">' +
+      (i < idx ? '✓ ' : i === idx ? '▶ ' : '') + et.libelle + '</button>' + dates + '</div>';
+  }).join('');
+  /* Pièces */
+  document.getElementById('sin-pieces').innerHTML = (s.pieces || []).length
+    ? s.pieces.map((p, i) =>
+        '<div class="ligne-checklist"><input type="checkbox" data-piece="' + i + '"' + (p.fait ? ' checked' : '') + '>' +
+        '<span style="flex:1" class="' + (p.fait ? 'fait-texte' : '') + '">' + echap(p.libelle) + '</span>' +
+        '<button type="button" class="btn btn-danger btn-petit" data-piece-suppr="' + i + '">✕</button></div>').join('')
+    : '<div class="vide">Aucune pièce dans la liste.</div>';
+  /* Journal */
+  const journal = (s.journal || []).slice().sort((a, b) => b.date.localeCompare(a.date));
+  document.getElementById('sin-journal').innerHTML = journal.length
+    ? journal.map(j =>
+        '<div class="journal-entree"><div class="journal-date">' +
+        new Date(j.date).toLocaleString('fr-FR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'}) +
+        '</div><div class="journal-texte">' + echap(j.texte) + '</div></div>').join('')
+    : '<div class="vide">Aucune note pour le moment. Notez vos actions au fil de l\'eau pour suivre le dossier.</div>';
+  /* Devis liés */
+  const lies = etat.devis.filter(d => d.sinistreId === s.id);
+  document.getElementById('sin-devis-lies').innerHTML = lies.length
+    ? lies.map(d =>
+        '<div class="ligne-checklist"><span style="flex:1">' + echap(d.objet) + ' — ' + echap(d.entreprise) +
+        (d.montant ? ' (' + fmtEuros(d.montant) + ')' : '') + '</span>' +
+        '<span class="badge badge-type">' + LIBELLE_STATUT_DEVIS[d.statut] + '</span>' +
+        '<button type="button" class="btn btn-secondaire btn-petit" data-ouvrir-devis="' + d.id + '">Ouvrir</button></div>').join('')
+    : '<div class="vide">Aucun devis lié à ce sinistre.</div>';
+}
+
+function ouvrirDlgSinistre(s){
+  sinistreEnEdition = s || null;
+  document.getElementById('dlg-sinistre-titre').textContent =
+    s ? 'Fiche sinistre — ' + s.reference : 'Nouveau sinistre';
+  document.getElementById('sn-f-reference').value = s ? s.reference : '';
+  document.getElementById('sn-f-type').value = s ? s.type : 'Dégât des eaux';
+  document.getElementById('sn-f-declaration').value = s ? s.dateDeclaration : todayStr();
+  document.getElementById('sn-f-montant').value = s && s.montantEstime != null && s.montantEstime !== 0 ? s.montantEstime : '';
+  document.getElementById('sn-f-adresse').value = s ? s.adresse : '';
+  document.getElementById('sn-f-locataire').value = s ? (s.locataire || '') : '';
+  document.getElementById('sn-f-proprietaire').value = s ? (s.proprietaire || '') : '';
+  document.getElementById('sn-f-assurance').value = s ? (s.assurance || '') : '';
+  document.getElementById('sn-f-dossier').value = s ? (s.numeroDossier || '') : '';
+  document.getElementById('sn-f-action').value = s ? (s.prochaineAction || '') : '';
+  document.getElementById('sn-f-relance').value = s ? (s.dateRelance || '') : '';
+  document.getElementById('sin-journal-texte').value = '';
+  document.getElementById('sin-piece-nouvelle').value = '';
+  document.getElementById('sin-sections').style.display = s ? '' : 'none';
+  if (s) rendreFicheSinistre();
+  document.getElementById('dlg-sinistre').showModal();
+}
+
+async function sauverSinistre(s){
+  touchSinistre(s);
+  await dbEcrire('sinistres', s);
+}
+
+async function validerSinistre(){
+  const reference = document.getElementById('sn-f-reference').value.trim();
+  const adresse = document.getElementById('sn-f-adresse').value.trim();
+  const declaration = document.getElementById('sn-f-declaration').value;
+  if (!reference || !adresse || !declaration) return;
+  const donnees = {
+    reference,
+    type: document.getElementById('sn-f-type').value,
+    dateDeclaration: declaration,
+    montantEstime: Number(document.getElementById('sn-f-montant').value) || 0,
+    adresse,
+    locataire: document.getElementById('sn-f-locataire').value.trim(),
+    proprietaire: document.getElementById('sn-f-proprietaire').value.trim(),
+    assurance: document.getElementById('sn-f-assurance').value.trim(),
+    numeroDossier: document.getElementById('sn-f-dossier').value.trim(),
+    prochaineAction: document.getElementById('sn-f-action').value.trim(),
+    dateRelance: document.getElementById('sn-f-relance').value
+  };
+  let s, creation = false;
+  if (sinistreEnEdition){
+    s = sinistreEnEdition;
+    Object.assign(s, donnees);
+    toast('Sinistre enregistré.');
+  } else {
+    creation = true;
+    s = Object.assign({
+      id: uid(), etape: 'declare',
+      etapes: {expertise:{}, devis:{}, travaux:{}, indemnisation:{}, cloture:{}},
+      pieces: PIECES_DEFAUT.map(l => ({libelle: l, fait: false})),
+      journal: [], creeLe: new Date().toISOString()
+    }, donnees);
+    etat.sinistres.push(s);
+  }
+  await sauverSinistre(s);
+  await syncSinistre(s);
+  rendreTout();
+  if (creation){
+    toast('Sinistre créé. La fiche s\'ouvre pour suivre les étapes, les pièces et le journal.');
+    ouvrirDlgSinistre(s);
+  }
+}
+
+/* ---------------- Dialogues : devis ---------------- */
+let devisEnEdition = null;
+
+function majChampProposition(){
+  const statut = document.getElementById('dv-f-statut').value;
+  const concerne = statut === 'propose' || statut === 'accepte' || statut === 'refuse';
+  document.getElementById('champ-date-proposition').style.display = concerne ? '' : 'none';
+  if (concerne && !document.getElementById('dv-f-proposition').value){
+    document.getElementById('dv-f-proposition').value = todayStr();
+  }
+}
+
+function ouvrirDlgDevis(d, sinistreLie){
+  devisEnEdition = d || null;
+  const sin = d ? d.sinistreId : (sinistreLie || '');
+  document.getElementById('dlg-devis-titre').textContent = d ? 'Modifier le devis' : 'Nouveau devis';
+  document.getElementById('dv-f-objet').value = d ? d.objet : '';
+  document.getElementById('dv-f-entreprise').value = d ? d.entreprise : '';
+  document.getElementById('dv-f-adresse').value = d ? (d.adresse || '') : '';
+  document.getElementById('dv-f-proprietaire').value = d ? (d.proprietaire || '') : '';
+  document.getElementById('dv-f-locataire').value = d ? (d.locataire || '') : '';
+  document.getElementById('dv-f-demande').value = d ? d.dateDemande : todayStr();
+  document.getElementById('dv-f-montant').value = d && d.montant ? d.montant : '';
+  document.getElementById('dv-f-delai').value = d ? (d.delaiRelance != null ? d.delaiRelance : 7) : 7;
+  /* liste des sinistres rattachables */
+  const sel = document.getElementById('dv-f-sinistre');
+  sel.innerHTML = '<option value="">Aucun</option>' +
+    etat.sinistres.slice().sort((a, b) => a.reference.localeCompare(b.reference)).map(s =>
+      '<option value="' + s.id + '"' + (s.id === sin ? ' selected' : '') + '>' +
+      echap(s.reference + ' — ' + s.adresse) + '</option>').join('');
+  document.getElementById('bloc-statut-devis').style.display = d ? '' : 'none';
+  if (d){
+    document.getElementById('dv-f-statut').value = d.statut;
+    document.getElementById('dv-f-proposition').value = d.dateProposition || '';
+    majChampProposition();
+  }
+  /* pré-remplissage depuis la fiche sinistre */
+  if (!d && sinistreLie){
+    const s = etat.sinistres.find(x => x.id === sinistreLie);
+    if (s){
+      document.getElementById('dv-f-adresse').value = s.adresse || '';
+      document.getElementById('dv-f-proprietaire').value = s.proprietaire || '';
+      document.getElementById('dv-f-locataire').value = s.locataire || '';
+    }
+  }
+  document.getElementById('dlg-devis').showModal();
+}
+
+async function validerDevis(){
+  const objet = document.getElementById('dv-f-objet').value.trim();
+  const entreprise = document.getElementById('dv-f-entreprise').value.trim();
+  const demande = document.getElementById('dv-f-demande').value;
+  if (!objet || !entreprise || !demande) return;
+  const donnees = {
+    objet, entreprise,
+    adresse: document.getElementById('dv-f-adresse').value.trim(),
+    proprietaire: document.getElementById('dv-f-proprietaire').value.trim(),
+    locataire: document.getElementById('dv-f-locataire').value.trim(),
+    dateDemande: demande,
+    montant: Number(document.getElementById('dv-f-montant').value) || 0,
+    delaiRelance: Math.max(1, Number(document.getElementById('dv-f-delai').value) || 7),
+    sinistreId: document.getElementById('dv-f-sinistre').value || null
+  };
+  let d;
+  if (devisEnEdition){
+    d = devisEnEdition;
+    const statut = document.getElementById('dv-f-statut').value;
+    Object.assign(d, donnees, {
+      statut,
+      dateProposition: (statut === 'propose' || statut === 'accepte' || statut === 'refuse')
+        ? (document.getElementById('dv-f-proposition').value || todayStr())
+        : d.dateProposition || null
+    });
+    toast('Devis modifié.');
+  } else {
+    d = Object.assign({id: uid(), statut: 'demande', dateProposition: null,
+                       creeLe: new Date().toISOString()}, donnees);
+    etat.devis.push(d);
+    toast('Devis enregistré. Une relance de l\'entreprise a été planifiée.');
+  }
+  await dbEcrire('devis', d);
+  await syncDevis(d);
+  rendreTout();
+  /* rafraîchir la fiche sinistre si elle est ouverte derrière */
+  if (sinistreEnEdition && document.getElementById('dlg-sinistre').open) rendreFicheSinistre();
+}
+
 /* ---------------- Événements ---------------- */
 function initEvenements(){
   /* Navigation */
@@ -1439,6 +2374,189 @@ function initEvenements(){
     }
   });
 
+  /* Fins de gestion */
+  ['recherche-fin', 'filtre-statut-fin'].forEach(id =>
+    document.getElementById(id).addEventListener('input', rendreFins));
+  document.getElementById('btn-nouvelle-fin').addEventListener('click', () => ouvrirDlgFin(null));
+  document.getElementById('vue-fins').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.modifFin){
+      const f = etat.finsGestion.find(x => x.id === cible.dataset.modifFin);
+      if (f) ouvrirDlgFin(f);
+    } else if (cible.dataset.supprFin){
+      const f = etat.finsGestion.find(x => x.id === cible.dataset.supprFin);
+      if (f && confirm('Supprimer la fin de gestion de ' + f.proprietaire + ' ? Les échéances liées seront aussi supprimées.')){
+        etat.finsGestion = etat.finsGestion.filter(x => x.id !== f.id);
+        await dbSupprimer('finsGestion', f.id);
+        await supprimerEcheancesLiees(f.id);
+        rendreTout();
+      }
+    }
+  });
+  document.getElementById('vue-fins').addEventListener('change', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.statutFin){
+      const f = etat.finsGestion.find(x => x.id === cible.dataset.statutFin);
+      if (f){
+        const avant = f.statut;
+        f.statut = cible.value;
+        await dbEcrire('finsGestion', f);
+        await syncFinGestion(f);
+        if (f.statut === 'solde' && avant !== 'solde') await proposerPerteGestion();
+        rendreTout();
+      }
+    }
+  });
+
+  /* Checklist du dialogue fin de gestion */
+  document.getElementById('fin-checklist-btn').addEventListener('click', () => {
+    const champ = document.getElementById('fin-checklist-nouvelle');
+    const libelle = champ.value.trim();
+    if (!libelle) return;
+    checklistFinTravail.push({libelle, fait: false});
+    champ.value = '';
+    rendreChecklistFin();
+  });
+  document.getElementById('fin-checklist').addEventListener('click', (ev) => {
+    if (ev.target.dataset.finSuppr != null){
+      checklistFinTravail.splice(Number(ev.target.dataset.finSuppr), 1);
+      rendreChecklistFin();
+    }
+  });
+  document.getElementById('fin-checklist').addEventListener('change', (ev) => {
+    if (ev.target.dataset.finCoche != null){
+      checklistFinTravail[Number(ev.target.dataset.finCoche)].fait = ev.target.checked;
+      rendreChecklistFin();
+    }
+  });
+  document.getElementById('form-fin').addEventListener('submit', () => { validerFin(); });
+
+  /* Sinistres : filtres et liste */
+  ['recherche-sinistre', 'filtre-etape-sinistre', 'filtre-attente-sinistre', 'filtre-assurance-sinistre']
+    .forEach(id => document.getElementById(id).addEventListener('input', rendreSinistres));
+  document.getElementById('seuil-dormance').addEventListener('change', async (ev) => {
+    const v = Math.max(1, Math.round(Number(ev.target.value) || 14));
+    ev.target.value = v;
+    await metaEcrire('seuilDormance', v);
+    rendreSinistres();
+  });
+  document.getElementById('btn-nouveau-sinistre').addEventListener('click', () => ouvrirDlgSinistre(null));
+  document.getElementById('vue-sinistres').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.ouvrirSinistre){
+      const s = etat.sinistres.find(x => x.id === cible.dataset.ouvrirSinistre);
+      if (s) ouvrirDlgSinistre(s);
+    } else if (cible.dataset.supprSinistre){
+      const s = etat.sinistres.find(x => x.id === cible.dataset.supprSinistre);
+      if (s && confirm('Supprimer le sinistre ' + s.reference + ' ? Les échéances liées seront supprimées, les devis rattachés seront conservés (détachés).')){
+        etat.sinistres = etat.sinistres.filter(x => x.id !== s.id);
+        await dbSupprimer('sinistres', s.id);
+        await supprimerEcheancesLiees(s.id);
+        for (const d of etat.devis.filter(x => x.sinistreId === s.id)){
+          d.sinistreId = null;
+          await dbEcrire('devis', d);
+        }
+        rendreTout();
+      }
+    }
+  });
+
+  /* Fiche sinistre : frise, pièces, journal, devis liés */
+  document.getElementById('dlg-sinistre').addEventListener('click', async (ev) => {
+    const s = sinistreEnEdition;
+    const cible = ev.target;
+    if (!s) return;
+    if (cible.dataset.choisirEtape){
+      s.etape = cible.dataset.choisirEtape;
+      await sauverSinistre(s);
+      await syncSinistre(s);
+      rendreFicheSinistre();
+      rendreSinistres(); rendreEcheancier(); rendreBandeau();
+    } else if (cible.dataset.pieceSuppr != null){
+      s.pieces.splice(Number(cible.dataset.pieceSuppr), 1);
+      await sauverSinistre(s);
+      rendreFicheSinistre(); rendreSinistres();
+    } else if (cible.id === 'sin-piece-btn'){
+      const champ = document.getElementById('sin-piece-nouvelle');
+      const libelle = champ.value.trim();
+      if (!libelle) return;
+      s.pieces = s.pieces || [];
+      s.pieces.push({libelle, fait: false});
+      champ.value = '';
+      await sauverSinistre(s);
+      rendreFicheSinistre(); rendreSinistres();
+    } else if (cible.id === 'sin-journal-btn'){
+      const champ = document.getElementById('sin-journal-texte');
+      const texte = champ.value.trim();
+      if (!texte) return;
+      s.journal = s.journal || [];
+      s.journal.push({date: new Date().toISOString(), texte});
+      champ.value = '';
+      await sauverSinistre(s);
+      rendreFicheSinistre(); rendreSinistres();
+    } else if (cible.id === 'sin-devis-creer'){
+      ouvrirDlgDevis(null, s.id);
+    } else if (cible.dataset.ouvrirDevis){
+      const d = etat.devis.find(x => x.id === cible.dataset.ouvrirDevis);
+      if (d) ouvrirDlgDevis(d);
+    }
+  });
+  document.getElementById('dlg-sinistre').addEventListener('change', async (ev) => {
+    const s = sinistreEnEdition;
+    const cible = ev.target;
+    if (!s) return;
+    if (cible.dataset.etape && cible.dataset.champ){
+      s.etapes = s.etapes || {};
+      s.etapes[cible.dataset.etape] = s.etapes[cible.dataset.etape] || {};
+      s.etapes[cible.dataset.etape][cible.dataset.champ] = cible.value;
+      await sauverSinistre(s);
+      rendreSinistres();
+    } else if (cible.dataset.piece != null){
+      s.pieces[Number(cible.dataset.piece)].fait = cible.checked;
+      await sauverSinistre(s);
+      rendreFicheSinistre(); rendreSinistres();
+    }
+  });
+  document.getElementById('form-sinistre').addEventListener('submit', () => { validerSinistre(); });
+
+  /* Devis */
+  ['recherche-devis', 'filtre-statut-devis'].forEach(id =>
+    document.getElementById(id).addEventListener('input', rendreDevis));
+  document.getElementById('btn-nouveau-devis').addEventListener('click', () => ouvrirDlgDevis(null));
+  document.getElementById('vue-devis').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.modifDevis){
+      const d = etat.devis.find(x => x.id === cible.dataset.modifDevis);
+      if (d) ouvrirDlgDevis(d);
+    } else if (cible.dataset.supprDevis){
+      const d = etat.devis.find(x => x.id === cible.dataset.supprDevis);
+      if (d && confirm('Supprimer le devis « ' + d.objet + ' » ? Les échéances de relance liées seront aussi supprimées.')){
+        etat.devis = etat.devis.filter(x => x.id !== d.id);
+        await dbSupprimer('devis', d.id);
+        await supprimerEcheancesLiees(d.id);
+        rendreTout();
+      }
+    }
+  });
+  document.getElementById('vue-devis').addEventListener('change', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.statutDevis){
+      const d = etat.devis.find(x => x.id === cible.dataset.statutDevis);
+      if (d){
+        d.statut = cible.value;
+        if (d.statut === 'propose' && !d.dateProposition){
+          d.dateProposition = todayStr();
+          toast('Date de proposition enregistrée au ' + fmtDate(d.dateProposition) + ' (modifiable via « Modifier »).');
+        }
+        await dbEcrire('devis', d);
+        await syncDevis(d);
+        rendreTout();
+      }
+    }
+  });
+  document.getElementById('dv-f-statut').addEventListener('change', majChampProposition);
+  document.getElementById('form-devis').addEventListener('submit', () => { validerDevis(); });
+
   /* Dialogues : boutons Annuler */
   document.querySelectorAll('dialog [data-fermer]').forEach(b =>
     b.addEventListener('click', () => b.closest('dialog').close()));
@@ -1480,6 +2598,7 @@ function initEvenements(){
     return;
   }
   initEvenements();
+  document.getElementById('seuil-dormance').value = seuilDormance();
   rendreTout();
 })();
 </script>
