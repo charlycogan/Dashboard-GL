@@ -409,6 +409,21 @@
     background:var(--gris-50); border:var(--bordure); border-radius:var(--rayon-petit);
     padding:12px 16px; margin:0; color:var(--gris-900);
   }
+  .recap-table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  .recap-table th, .recap-table td{border:.5px solid var(--gris-300); padding:5px 8px; text-align:left; vertical-align:top;}
+  .recap-table th{background:var(--gris-100); font-weight:500; color:var(--gris-700);}
+
+  /* ---------- Réglages ---------- */
+  .nav-reglages{margin-left:auto;}
+  #reglages-onglets{list-style:none; margin:0; padding:0;}
+  .regl-onglet{
+    display:flex; align-items:center; gap:10px; padding:8px 12px; margin-bottom:6px;
+    border:var(--bordure); border-radius:var(--rayon-petit); background:var(--surface);
+    font-size:13.5px; cursor:grab;
+  }
+  .regl-onglet.survol{border-color:var(--bleu-500); background:var(--bleu-50);}
+  .poignee{color:var(--gris-500); letter-spacing:-2px; cursor:grab; user-select:none;}
+  .regl-visible{display:flex; gap:6px; align-items:center; font-size:12.5px; color:var(--gris-500); cursor:pointer;}
 
   /* ---------- Bouton de thème ---------- */
   #ico-soleil{display:none;}
@@ -457,6 +472,7 @@
   <button data-vue="saisies"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5 3 20l1.5-4.5z"/></svg>À saisir <span class="badge-onglet" id="badge-saisies" style="display:none" title="Éléments restant à saisir">0</span></button>
   <button data-vue="locdig"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Location digitale <span class="badge-onglet" id="badge-locdig" style="display:none" title="Biens publiés à suivre">0</span></button>
   <button data-vue="stats"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M5 20v-9M12 20V4M19 20v-6"/></svg>Mes stats</button>
+  <button id="btn-reglages" class="nav-reglages" title="Réglages" aria-label="Réglages"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="17" height="17" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.55V21a2 2 0 1 1-4 0v-.09a1.7 1.7 0 0 0-1-1.55 1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.7 1.7 0 0 0 .34-1.87 1.7 1.7 0 0 0-1.55-1H3a2 2 0 1 1 0-4h.09a1.7 1.7 0 0 0 1.55-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.07 4.2l.06.06a1.7 1.7 0 0 0 1.87.34h.01a1.7 1.7 0 0 0 1-1.55V3a2 2 0 1 1 4 0v.09a1.7 1.7 0 0 0 1 1.55h.01a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87v.01a1.7 1.7 0 0 0 1.55 1H21a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.55 1z"/></svg></button>
 </nav>
 
 <main>
@@ -1273,17 +1289,133 @@
 </dialog>
 
 <!-- ============ DIALOGUE RÉCAP E-MAIL ============ -->
-<dialog id="dlg-recap">
+<dialog id="dlg-recap" class="dlg-large">
   <div class="dlg-tete">Récap par e-mail</div>
   <form method="dialog">
     <div class="dlg-corps">
-      <p class="aide" style="margin:0 0 8px">Vérifiez le récapitulatif ci-dessous, puis ouvrez-le dans votre messagerie (destinataire et objet pré-remplis) ou copiez-le. Rien n'est envoyé sans votre action.</p>
-      <pre id="recap-texte" class="recap-pre"></pre>
+      <p class="aide" style="margin:0 0 8px">Vérifiez le récapitulatif ci-dessous (seules les catégories ayant des dossiers en cours apparaissent). « Ouvrir dans Outlook » prépare un brouillon texte ; « Copier le tableau » copie une version mise en forme à coller dans le message. Rien n'est envoyé sans votre action.</p>
+      <div id="recap-apercu"></div>
     </div>
     <div class="dlg-pied">
       <button type="button" class="btn btn-secondaire" data-fermer>Fermer</button>
-      <button type="button" class="btn btn-secondaire" id="btn-copier-recap">Copier le récap</button>
+      <button type="button" class="btn btn-secondaire" id="btn-copier-recap">Copier le tableau</button>
       <button type="button" class="btn" id="btn-mailto-recap">Ouvrir dans Outlook</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ DIALOGUE VPAT FACTURÉE ============ -->
+<dialog id="dlg-vpat">
+  <div class="dlg-tete">VPAT réalisée — facturation</div>
+  <form method="dialog" id="form-vpat">
+    <div class="dlg-corps">
+      <p class="aide" id="vpat-contexte" style="margin:0 0 12px"></p>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="vpat-facturee">VPAT facturée ?</label>
+          <select id="vpat-facturee">
+            <option value="oui">Oui</option>
+            <option value="non">Non (non prévue au mandat)</option>
+          </select>
+          <div class="aide">Si facturée, le montant s'ajoute aux honoraires de vacation (Mes stats), sur la période du jour.</div>
+        </div>
+        <div class="champ" id="champ-vpat-montant">
+          <label for="vpat-montant">Montant (€)</label>
+          <input type="number" id="vpat-montant" min="0" step="0.01">
+        </div>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="submit" class="btn">Valider</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ DIALOGUE RÉGLAGES ============ -->
+<dialog id="dlg-reglages">
+  <div class="dlg-tete">Réglages</div>
+  <form method="dialog">
+    <div class="dlg-corps">
+      <div class="section-fiche" style="border-top:none; margin-top:0; padding-top:0">
+        <h4>Ordre et visibilité des onglets <span class="normal">— glissez-déposez pour réorganiser</span></h4>
+        <ul id="reglages-onglets"></ul>
+      </div>
+      <div class="section-fiche">
+        <h4>Apparence</h4>
+        <div class="champ">
+          <label for="reg-theme">Thème</label>
+          <select id="reg-theme">
+            <option value="systeme">Suivre le système</option>
+            <option value="clair">Clair</option>
+            <option value="sombre">Sombre</option>
+          </select>
+        </div>
+      </div>
+      <div class="section-fiche">
+        <h4>Récap e-mail</h4>
+        <div class="champ">
+          <label for="reg-destinataire">Destinataire du récap</label>
+          <input type="email" id="reg-destinataire" maxlength="160" placeholder="charly.cogan@foncia.com">
+        </div>
+      </div>
+      <div class="section-fiche">
+        <h4>Paramètres métier</h4>
+        <div class="deux-col">
+          <div class="champ">
+            <label for="reg-vpat">Montant par défaut d'une VPAT (€)</label>
+            <input type="number" id="reg-vpat" min="0" step="0.01">
+          </div>
+          <div class="champ">
+            <label for="reg-conge">EDL de sortie + VPAT : délai après réception du congé (jours)</label>
+            <input type="number" id="reg-conge" min="1" step="1">
+          </div>
+        </div>
+        <div class="deux-col">
+          <div class="champ">
+            <label for="reg-locdig-sans">Relance location digitale sans dossier (jours)</label>
+            <input type="number" id="reg-locdig-sans" min="1" step="1">
+          </div>
+          <div class="champ">
+            <label for="reg-locdig-avec">Relance location digitale avec dossier (jours)</label>
+            <input type="number" id="reg-locdig-avec" min="1" step="1">
+          </div>
+        </div>
+        <div class="deux-col">
+          <div class="champ">
+            <label for="reg-restit-sans">Restitution du dépôt sans retenue (mois)</label>
+            <input type="number" id="reg-restit-sans" min="1" step="1">
+          </div>
+          <div class="champ">
+            <label for="reg-restit-avec">Restitution du dépôt avec retenues (mois)</label>
+            <input type="number" id="reg-restit-avec" min="1" step="1">
+          </div>
+        </div>
+        <div class="deux-col">
+          <div class="champ">
+            <label for="reg-dormance">Sinistre sans action récente après (jours)</label>
+            <input type="number" id="reg-dormance" min="1" step="1">
+          </div>
+          <div class="champ">
+            <label for="reg-rappel">Rappel de sauvegarde après (jours)</label>
+            <input type="number" id="reg-rappel" min="1" step="1">
+          </div>
+        </div>
+        <p class="aide" style="margin:0">Les nouveaux délais s'appliquent immédiatement aux échéances recalculées automatiquement. Les valeurs déjà validées dossier par dossier (date limite d'un arrêté, délai d'un bien digital…) ne sont pas réécrites.</p>
+      </div>
+      <div class="section-fiche">
+        <h4>Sauvegarde</h4>
+        <div style="display:flex; gap:8px; flex-wrap:wrap">
+          <button type="button" class="btn btn-secondaire" id="reg-exporter">Exporter les données</button>
+          <button type="button" class="btn btn-secondaire" id="reg-importer">Importer une sauvegarde</button>
+        </div>
+      </div>
+      <div class="section-fiche">
+        <h4>Zone sensible</h4>
+        <button type="button" class="btn btn-danger" id="reg-reset">Réinitialiser toutes les données</button>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="submit" class="btn">Fermer</button>
     </div>
   </form>
 </dialog>
@@ -1343,17 +1475,22 @@ function appliquerTheme(t){
   if (t === 'sombre') document.documentElement.dataset.theme = 'sombre';
   else delete document.documentElement.dataset.theme;
 }
-function lireThemeMemorise(){
-  try { return localStorage.getItem('themePrefere'); } catch (err){ return null; }
+/* Mode : 'clair', 'sombre' ou 'systeme' (l'ancienne clé themePrefere est reprise) */
+function lireModeTheme(){
+  try {
+    return localStorage.getItem('themeMode') || localStorage.getItem('themePrefere') || '';
+  } catch (err){ return ''; }
 }
-function memoriserTheme(t){
-  try { localStorage.setItem('themePrefere', t); } catch (err){ /* navigation privée */ }
+function memoriserModeTheme(m){
+  try { localStorage.setItem('themeMode', m); } catch (err){ /* navigation privée */ }
 }
-appliquerTheme((function(){
-  const memo = lireThemeMemorise();
-  if (memo === 'clair' || memo === 'sombre') return memo;
-  return (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'sombre' : 'clair';
-})());
+function appliquerModeTheme(mode){
+  const m = (mode === 'clair' || mode === 'sombre') ? mode : 'systeme';
+  const sombre = m === 'sombre' || (m === 'systeme' &&
+    window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+  appliquerTheme(sombre ? 'sombre' : 'clair');
+}
+appliquerModeTheme(lireModeTheme());
 
 /* ---------------- Base de données locale (IndexedDB) ---------------- */
 const NOM_DB = 'gestion-locative', VERSION_DB = 4;
@@ -1441,6 +1578,17 @@ async function chargerEtat(){
   lignesMeta.forEach(l => { etat.meta[l.cle] = l.valeur; });
 }
 
+/* ---------------- Paramètres (Réglages), stockés dans meta donc exportés ---------------- */
+function param(cle, defaut){
+  const v = etat.meta[cle];
+  if (v === undefined || v === null || v === '') return defaut;
+  const n = Number(v);
+  return isNaN(n) ? defaut : n;
+}
+function destinataireRecap(){
+  return (etat.meta['destinataireRecap'] || '').trim() || 'charly.cogan@foncia.com';
+}
+
 /* ---------------- Échéances : priorité et synchronisation ---------------- */
 function prioriteEcheance(e){
   const d = diffJours(e.dateEcheance);
@@ -1481,8 +1629,8 @@ function libelleDossier(x){ return x.locataire + ' — ' + x.adresse; }
 
 async function syncConge(c){
   const dossier = libelleDossier(c);
-  /* EDL de sortie et VPAT : à réaliser dans les 7 jours suivant la réception du congé */
-  const limite = addDaysStr(c.dateReception, 7);
+  /* EDL de sortie et VPAT : à réaliser dans les N jours suivant la réception du congé (Réglages) */
+  const limite = addDaysStr(c.dateReception, param('delaiCongeActions', 7));
   await ensureAuto('conge:' + c.id + ':edl', c.statut === 'recu', {
     titre: "Planifier l'EDL de sortie",
     type: 'Congé', dossier,
@@ -2206,8 +2354,9 @@ function rendreLocdig(){
       etatVide('Aucun bien publié en location digitale.', 'btn-nouvelle-locdig', '＋ Nouveau bien digital');
     return;
   }
+  const pSans = param('delaiLocdigSans', 7), pAvec = param('delaiLocdigAvec', 14);
   const lignes = liste.map(l => {
-    const delai = l.delaiNL || 7;
+    const delai = l.delaiNL || pSans;
     const actif = l.statut === 'publie' || l.statut === 'dossier';
     const dateRelance = addDaysStr(l.datePublication, delai);
     let relance = '<span class="sous-info">—</span>';
@@ -2217,7 +2366,7 @@ function rendreLocdig(){
         : d === 0 ? ' <span class="badge badge-moyenne">aujourd\'hui</span>' : '';
       relance = '<strong>' + fmtDate(dateRelance) + '</strong> <span class="badge badge-type">' + delai + ' j</span>' + badge +
         ' <button type="button" class="btn btn-secondaire btn-petit" data-delai-locdig="' + l.id +
-        '" title="Basculer le délai de relance">→ ' + (delai === 7 ? 14 : 7) + ' j</button>';
+        '" title="Basculer le délai de relance">→ ' + (delai === pSans ? pAvec : pSans) + ' j</button>';
     }
     const dossierDep = l.dossierDepose
       ? '<span class="badge badge-vert">Oui</span>'
@@ -2432,7 +2581,7 @@ function rendreBandeau(){
     texte = 'Vos données n\'ont encore jamais été sauvegardées. Pensez à exporter régulièrement.';
   } else {
     const jours = Math.floor((Date.now() - new Date(dernier).getTime()) / 86400000);
-    if (jours >= 7){
+    if (jours >= param('freqRappelSauvegarde', 7)){
       visible = true;
       texte = 'Dernière sauvegarde il y a ' + jours + ' jours. Pensez à exporter vos données.';
     }
@@ -2582,6 +2731,9 @@ async function importerDonnees(fichier){
   for (const x of (d.locationsDigitales || [])) await dbEcrire('locationsDigitales', x);
   for (const l of (d.meta || [])) await dbEcrire('meta', l);
   await chargerEtat();
+  appliquerOnglets();
+  if (etat.meta['themeMode']) appliquerModeTheme(etat.meta['themeMode']);
+  document.getElementById('seuil-dormance').value = seuilDormance();
   rendreTout();
   toast('Sauvegarde importée avec succès.');
 }
@@ -2703,7 +2855,8 @@ function recalculerLimiteRestitution(){
   const cles = document.getElementById('ar-f-cles').value;
   const retenues = document.getElementById('ar-f-retenues').checked;
   if (cles){
-    document.getElementById('ar-f-limite').value = addMonthsStr(cles, retenues ? 2 : 1);
+    document.getElementById('ar-f-limite').value = addMonthsStr(cles,
+      retenues ? param('restitutionAvecRetenues', 2) : param('restitutionSansRetenue', 1));
   }
 }
 function majBlocRetenues(){
@@ -2754,7 +2907,8 @@ async function validerArrete(){
   if (!locataire || !adresse || !cles) return;
   const retenues = document.getElementById('ar-f-retenues').checked;
   let limite = document.getElementById('ar-f-limite').value;
-  if (!limite) limite = addMonthsStr(cles, retenues ? 2 : 1);
+  if (!limite) limite = addMonthsStr(cles,
+    retenues ? param('restitutionAvecRetenues', 2) : param('restitutionSansRetenue', 1));
   const donnees = {
     locataire, adresse,
     dateRemiseCles: cles,
@@ -3160,8 +3314,10 @@ async function validerLocdig(){
     const dossierAvant = !!l.dossierDepose;
     const statutAvant = l.statut;
     Object.assign(l, donnees, {statut: document.getElementById('ld-f-statut').value});
-    /* changement de l'indicateur dossier : revenir au délai par défaut (7 ou 14 j) */
-    if (dossierDepose !== dossierAvant) l.delaiNL = dossierDepose ? 14 : 7;
+    /* changement de l'indicateur dossier : revenir au délai par défaut des Réglages */
+    if (dossierDepose !== dossierAvant){
+      l.delaiNL = dossierDepose ? param('delaiLocdigAvec', 14) : param('delaiLocdigSans', 7);
+    }
     if (l.statut === 'dossier') l.dossierDepose = true;
     if (l.statut === 'loue' && statutAvant !== 'loue') l.dateLoue = todayStr();
     else if (l.statut !== 'loue' && statutAvant === 'loue') l.dateLoue = null;
@@ -3170,7 +3326,7 @@ async function validerLocdig(){
     l = Object.assign({
       id: uid(),
       statut: dossierDepose ? 'dossier' : 'publie',
-      delaiNL: dossierDepose ? 14 : 7,
+      delaiNL: dossierDepose ? param('delaiLocdigAvec', 14) : param('delaiLocdigSans', 7),
       creeLe: new Date().toISOString()
     }, donnees);
     etat.locationsDigitales.push(l);
@@ -3182,86 +3338,280 @@ async function validerLocdig(){
 }
 
 /* ---------------- Récap par e-mail ----------------
-   Construit un texte de synthèse local. Le bouton « Ouvrir dans Outlook »
-   utilise un simple lien mailto: (brouillon dans la messagerie par défaut,
-   aucun envoi automatique, aucun service externe). */
-const DESTINATAIRE_RECAP = 'charly.cogan@foncia.com';
+   Tableau des dossiers en cours, regroupés par onglet (catégories vides
+   masquées). « Ouvrir dans Outlook » prépare un brouillon mailto: en texte
+   aligné ; « Copier le tableau » place une version HTML enrichie dans le
+   presse-papier, à coller dans le message. Aucun envoi automatique. */
 let recapCourant = '';
+let lignesRecapMemo = [];
 
-function construireRecap(){
-  const actives = etat.echeances.filter(e => e.statut === 'active');
-  const retard = actives.filter(e => diffJours(e.dateEcheance) < 0).length;
-  const jour = actives.filter(e => diffJours(e.dateEcheance) === 0).length;
-  const semaine = actives.filter(e => {
-    const d = diffJours(e.dateEcheance);
-    return d >= 1 && d <= 7;
-  }).length;
-  const dormants = etat.sinistres.filter(estDormant).length;
-  const bornes = bornesPeriode('mois', 0);
-  const deb = bornes[0], fin = bornes[1];
-  const mandats = mandatsEntres(deb, fin);
-  const pertes = pertesGestion(deb, fin);
-  const net = mandats - pertes;
-  return [
-    'Récap gestion locative — ' + fmtDate(todayStr()),
-    '',
-    'Échéancier',
-    '- En retard : ' + retard,
-    "- Aujourd'hui : " + jour,
-    '- 7 prochains jours : ' + semaine,
-    '',
-    'Dossiers en cours',
-    '- Congés locataires : ' + etat.conges.filter(c => c.statut !== 'cloture').length,
-    '- Arrêtés de compte : ' + etat.arretes.filter(a => a.statut !== 'restitue').length,
-    '- Fins de gestion : ' + etat.finsGestion.filter(f => f.statut !== 'solde').length,
-    '- Sinistres en attente : ' + etat.sinistres.filter(s => s.etape !== 'cloture').length +
-      (dormants ? ' (dont ' + dormants + ' sans action récente)' : ''),
-    '- Devis à relancer : ' + etat.devis.filter(d => d.statut === 'demande' || d.statut === 'propose').length,
-    '- À saisir : ' + etat.saisies.filter(s => s.statut === 'a_saisir').length,
-    '- Location digitale à suivre : ' + etat.locationsDigitales.filter(l =>
-        l.statut === 'publie' || l.statut === 'dossier').length,
-    '',
-    'Mes stats — ' + libellePeriodeLong('mois'),
-    "- États des lieux d'entrée réalisés : " + edlEntreeRealises(deb, fin),
-    '- Honoraires de vacation : ' + fmtEuros(sommeSerie('honoraires', deb, fin)),
-    '- Attrition : ' + (net > 0 ? '+' : '') + net + ' (' + mandats + ' mandat(s) entré(s), ' +
-      pertes + ' perte(s) de gestion)',
-    '- Locations 100 % digitales : ' + locationsLouees(deb, fin)
-  ].join('\n');
+function lignesRecap(){
+  const lignes = [];
+  etat.echeances
+    .filter(e => e.statut === 'active' && diffJours(e.dateEcheance) < 0)
+    .sort((a, b) => a.dateEcheance.localeCompare(b.dateEcheance))
+    .forEach(e => lignes.push({
+      categorie: 'Échéances en retard', nom: e.titre, adresse: e.dossier || '—',
+      echeance: fmtDate(e.dateEcheance) + ' (' + Math.abs(diffJours(e.dateEcheance)) + ' j de retard)',
+      statut: 'En retard'
+    }));
+  etat.conges.filter(c => c.statut !== 'cloture').forEach(c => lignes.push({
+    categorie: 'Congés locataires', nom: c.locataire, adresse: c.adresse,
+    echeance: 'Fin de préavis : ' + fmtDate(c.dateFinPreavis), statut: LIBELLE_STATUT_CONGE[c.statut]
+  }));
+  etat.arretes.filter(a => a.statut !== 'restitue').forEach(a => lignes.push({
+    categorie: 'Arrêtés de compte', nom: a.locataire, adresse: a.adresse,
+    echeance: a.dateLimite ? 'Limite restitution : ' + fmtDate(a.dateLimite) : 'Remise des clés à venir',
+    statut: LIBELLE_STATUT_ARRETE[a.statut]
+  }));
+  etat.finsGestion.filter(f => f.statut !== 'solde').forEach(f => lignes.push({
+    categorie: 'Fin de gestion', nom: f.proprietaire, adresse: f.adresse,
+    echeance: "Date d'effet : " + fmtDate(f.dateEffet), statut: LIBELLE_STATUT_FIN[f.statut]
+  }));
+  etat.sinistres.filter(s => s.etape !== 'cloture').forEach(s => lignes.push({
+    categorie: 'Sinistres', nom: s.reference + (s.locataire ? ' — ' + s.locataire : ''), adresse: s.adresse,
+    echeance: s.dateRelance ? 'Relance : ' + fmtDate(s.dateRelance) : 'Pas de relance planifiée',
+    statut: LIBELLE_ETAPE[s.etape]
+  }));
+  etat.devis.filter(d => d.statut === 'demande' || d.statut === 'recu' || d.statut === 'propose')
+    .forEach(d => lignes.push({
+      categorie: 'Devis', nom: d.objet + ' — ' + d.entreprise, adresse: d.adresse || '—',
+      echeance: 'Demandé le ' + fmtDate(d.dateDemande), statut: LIBELLE_STATUT_DEVIS[d.statut]
+    }));
+  etat.saisies.filter(s => s.statut === 'a_saisir').forEach(s => lignes.push({
+    categorie: 'À saisir', nom: LIBELLE_TYPE_SAISIE[s.type] + ' — ' + s.proprietaire, adresse: s.adresse,
+    echeance: "Date d'effet : " + fmtDate(s.dateEffet), statut: 'À saisir'
+  }));
+  etat.locationsDigitales.filter(l => l.statut === 'publie' || l.statut === 'dossier')
+    .forEach(l => lignes.push({
+      categorie: 'Location digitale', nom: l.proprietaire || '—', adresse: l.adresse,
+      echeance: 'Relance NL : ' + fmtDate(addDaysStr(l.datePublication, l.delaiNL || param('delaiLocdigSans', 7))),
+      statut: LIBELLE_STATUT_LOCDIG[l.statut]
+    }));
+  return lignes;
+}
+
+function grouperRecap(lignes){
+  const groupes = [];
+  lignes.forEach(l => {
+    const g = groupes[groupes.length - 1];
+    if (g && g.categorie === l.categorie) g.lignes.push(l);
+    else groupes.push({categorie: l.categorie, lignes: [l]});
+  });
+  return groupes;
+}
+
+const COLONNES_RECAP = ['Catégorie', 'Dossier', 'Adresse', 'Échéance', 'Statut'];
+
+function recapTexte(lignes){
+  const titre = 'Récap gestion locative — ' + fmtDate(todayStr());
+  if (!lignes.length) return titre + '\r\n\r\nAucun dossier en cours : rien à signaler.';
+  const rangs = lignes.map(l => [l.categorie, l.nom, l.adresse, l.echeance, l.statut]);
+  const larg = COLONNES_RECAP.map((c, i) => Math.max(c.length, ...rangs.map(r => String(r[i]).length)));
+  const rang = (r) => r.map((c, i) => String(c).padEnd(larg[i])).join('  ').trimEnd();
+  return titre + '\r\n\r\n' +
+    rang(COLONNES_RECAP) + '\r\n' +
+    larg.map(x => '-'.repeat(x)).join('  ') + '\r\n' +
+    rangs.map(rang).join('\r\n');
+}
+
+function recapApercuHtml(lignes){
+  if (!lignes.length) return '<div class="vide">Aucun dossier en cours : rien à signaler.</div>';
+  let html = '<table class="recap-table"><thead><tr>' +
+    COLONNES_RECAP.map(c => '<th>' + c + '</th>').join('') + '</tr></thead><tbody>';
+  grouperRecap(lignes).forEach(g => {
+    g.lignes.forEach((l, i) => {
+      html += '<tr>' +
+        (i === 0 ? '<td rowspan="' + g.lignes.length + '"><strong>' + echap(g.categorie) + '</strong></td>' : '') +
+        '<td>' + echap(l.nom) + '</td><td>' + echap(l.adresse) + '</td>' +
+        '<td>' + echap(l.echeance) + '</td><td>' + echap(l.statut) + '</td></tr>';
+    });
+  });
+  return html + '</tbody></table>';
+}
+
+/* Version HTML autonome (styles en ligne) pour un collage propre dans Outlook */
+function recapHtmlEnrichi(lignes){
+  const sc = 'border:1px solid #c8cdd4;padding:4px 9px;text-align:left;vertical-align:top;' +
+    'font-family:Segoe UI,Arial,sans-serif;font-size:12px;';
+  let html = '<p style="font-family:Segoe UI,Arial,sans-serif;font-size:13px"><strong>Récap gestion locative — ' +
+    fmtDate(todayStr()) + '</strong></p>';
+  if (!lignes.length) return html + '<p style="font-family:Segoe UI,Arial,sans-serif;font-size:12px">Aucun dossier en cours.</p>';
+  html += '<table style="border-collapse:collapse"><thead><tr>' +
+    COLONNES_RECAP.map(c => '<th style="' + sc + 'background:#eef1f5">' + c + '</th>').join('') + '</tr></thead><tbody>';
+  grouperRecap(lignes).forEach(g => {
+    g.lignes.forEach((l, i) => {
+      html += '<tr>' +
+        (i === 0 ? '<td rowspan="' + g.lignes.length + '" style="' + sc + '"><strong>' + echap(g.categorie) + '</strong></td>' : '') +
+        '<td style="' + sc + '">' + echap(l.nom) + '</td><td style="' + sc + '">' + echap(l.adresse) + '</td>' +
+        '<td style="' + sc + '">' + echap(l.echeance) + '</td><td style="' + sc + '">' + echap(l.statut) + '</td></tr>';
+    });
+  });
+  return html + '</tbody></table>';
 }
 
 function lienMailtoRecap(){
   const sujet = 'Récap gestion locative — ' + fmtDate(todayStr());
-  const corps = recapCourant.replace(/\n/g, '\r\n');
-  return 'mailto:' + DESTINATAIRE_RECAP +
+  return 'mailto:' + destinataireRecap() +
     '?subject=' + encodeURIComponent(sujet) +
-    '&body=' + encodeURIComponent(corps);
+    '&body=' + encodeURIComponent(recapCourant);
 }
 
 function ouvrirRecap(){
-  recapCourant = construireRecap();
-  document.getElementById('recap-texte').textContent = recapCourant;
+  lignesRecapMemo = lignesRecap();
+  recapCourant = recapTexte(lignesRecapMemo);
+  document.getElementById('recap-apercu').innerHTML = recapApercuHtml(lignesRecapMemo);
   document.getElementById('dlg-recap').showModal();
 }
 
-async function copierRecap(){
+async function copierTableauRecap(){
+  const texteSimple = recapCourant.replace(/\r\n/g, '\n');
   try {
-    await navigator.clipboard.writeText(recapCourant);
-    toast('Récap copié dans le presse-papier.');
+    await navigator.clipboard.write([new ClipboardItem({
+      'text/html': new Blob([recapHtmlEnrichi(lignesRecapMemo)], {type: 'text/html'}),
+      'text/plain': new Blob([texteSimple], {type: 'text/plain'})
+    })]);
+    toast('Tableau copié — collez-le directement dans Outlook.');
   } catch (err){
-    /* repli si l'API presse-papier est indisponible */
-    const ta = document.createElement('textarea');
-    ta.value = recapCourant;
-    document.body.appendChild(ta);
-    ta.select();
     try {
-      document.execCommand('copy');
-      toast('Récap copié dans le presse-papier.');
+      await navigator.clipboard.writeText(texteSimple);
+      toast('Copié en texte simple (tableau enrichi non pris en charge).');
     } catch (err2){
-      toast('Copie impossible : sélectionnez le texte manuellement.');
+      const ta = document.createElement('textarea');
+      ta.value = texteSimple;
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); toast('Récap copié dans le presse-papier.'); }
+      catch (err3){ toast('Copie impossible : sélectionnez le texte manuellement.'); }
+      ta.remove();
     }
-    ta.remove();
   }
+}
+
+/* ---------------- VPAT réalisée : facturation des honoraires ---------------- */
+let vpatEcheance = null;
+
+function ouvrirDlgVpat(e){
+  vpatEcheance = e;
+  document.getElementById('vpat-contexte').textContent =
+    'VPAT réalisée pour : ' + (e.dossier || e.titre) + '.';
+  document.getElementById('vpat-facturee').value = 'oui';
+  document.getElementById('vpat-montant').value = param('montantVpat', 139);
+  document.getElementById('champ-vpat-montant').style.display = '';
+  document.getElementById('dlg-vpat').showModal();
+}
+
+async function validerVpat(){
+  if (!vpatEcheance) return;
+  if (document.getElementById('vpat-facturee').value === 'oui'){
+    const montant = Number(document.getElementById('vpat-montant').value) || 0;
+    if (montant > 0){
+      const entree = {
+        id: uid(), serie: 'honoraires', date: todayStr(), valeur: montant,
+        libelle: 'VPAT — ' + (vpatEcheance.dossier || ''), creeLe: new Date().toISOString()
+      };
+      etat.statsEntries.push(entree);
+      await dbEcrire('statsEntries', entree);
+      toast(fmtEuros(montant) + ' ajoutés aux honoraires de vacation (VPAT facturée).');
+    }
+  } else {
+    toast('VPAT enregistrée comme réalisée, non facturée.');
+  }
+  vpatEcheance = null;
+  rendreTout();
+}
+
+/* ---------------- Réglages ---------------- */
+const ONGLETS = [
+  {id:'accueil', nom:'Accueil'},
+  {id:'echeancier', nom:'Échéancier'},
+  {id:'conges', nom:'Congés locataires'},
+  {id:'arretes', nom:'Arrêtés de compte'},
+  {id:'fins', nom:'Fin de gestion'},
+  {id:'sinistres', nom:'Sinistres'},
+  {id:'devis', nom:'Devis'},
+  {id:'saisies', nom:'À saisir'},
+  {id:'locdig', nom:'Location digitale'},
+  {id:'stats', nom:'Mes stats'}
+];
+
+function configOnglets(){
+  let cfg = Array.isArray(etat.meta['ongletsConfig']) ? etat.meta['ongletsConfig'] : [];
+  const connus = ONGLETS.map(o => o.id);
+  cfg = cfg.filter(x => x && connus.includes(x.id));
+  connus.forEach(id => { if (!cfg.some(x => x.id === id)) cfg.push({id, visible: true}); });
+  /* l'Accueil reste toujours visible (page d'arrivée) */
+  return cfg.map(x => ({id: x.id, visible: x.id === 'accueil' ? true : x.visible !== false}));
+}
+
+function appliquerOnglets(){
+  const cfg = configOnglets();
+  const nav = document.querySelector('nav');
+  cfg.forEach(x => {
+    const b = nav.querySelector('button[data-vue="' + x.id + '"]');
+    if (!b) return;
+    b.style.display = x.visible ? '' : 'none';
+    nav.appendChild(b);
+  });
+  nav.appendChild(document.getElementById('btn-reglages'));
+  const actif = nav.querySelector('button.actif');
+  if (actif && actif.style.display === 'none'){
+    const premier = cfg.find(x => x.visible);
+    if (premier) allerVue(premier.id);
+  }
+}
+
+function rendreReglagesOnglets(){
+  const cfg = configOnglets();
+  document.getElementById('reglages-onglets').innerHTML = cfg.map((x, i) => {
+    const o = ONGLETS.find(z => z.id === x.id);
+    return '<li class="regl-onglet" draggable="true" data-idx="' + i + '">' +
+      '<span class="poignee" aria-hidden="true">⋮⋮</span>' +
+      '<span style="flex:1">' + o.nom + '</span>' +
+      '<label class="regl-visible"><input type="checkbox" data-visible-onglet="' + x.id + '"' +
+      (x.visible ? ' checked' : '') + (x.id === 'accueil' ? ' disabled' : '') + '> visible</label></li>';
+  }).join('');
+}
+
+function ouvrirReglages(){
+  rendreReglagesOnglets();
+  document.getElementById('reg-theme').value = (function(){
+    const m = lireModeTheme();
+    return (m === 'clair' || m === 'sombre') ? m : 'systeme';
+  })();
+  document.getElementById('reg-destinataire').value = destinataireRecap();
+  document.getElementById('reg-vpat').value = param('montantVpat', 139);
+  document.getElementById('reg-conge').value = param('delaiCongeActions', 7);
+  document.getElementById('reg-locdig-sans').value = param('delaiLocdigSans', 7);
+  document.getElementById('reg-locdig-avec').value = param('delaiLocdigAvec', 14);
+  document.getElementById('reg-restit-sans').value = param('restitutionSansRetenue', 1);
+  document.getElementById('reg-restit-avec').value = param('restitutionAvecRetenues', 2);
+  document.getElementById('reg-dormance').value = seuilDormance();
+  document.getElementById('reg-rappel').value = param('freqRappelSauvegarde', 7);
+  document.getElementById('dlg-reglages').showModal();
+}
+
+/* Recalcule toutes les échéances automatiques (après changement de délais) */
+async function resyncTout(){
+  for (const c of etat.conges) await syncConge(c);
+  for (const a of etat.arretes) await syncArrete(a);
+  for (const f of etat.finsGestion) await syncFinGestion(f);
+  for (const s of etat.sinistres) await syncSinistre(s);
+  for (const d of etat.devis) await syncDevis(d);
+  for (const s of etat.saisies) await syncSaisie(s);
+  for (const l of etat.locationsDigitales) await syncLocdig(l);
+}
+
+async function reinitialiserDonnees(){
+  if (!confirm('Réinitialiser TOUTES les données de l\'application ? Cette action est irréversible.')) return;
+  if (!confirm('Dernière confirmation : toutes les données et préférences locales seront définitivement effacées. Pensez à exporter une sauvegarde avant. Continuer ?')) return;
+  for (const m of MAGASINS) await dbVider(m);
+  await dbVider('meta');
+  await chargerEtat();
+  document.getElementById('dlg-reglages').close();
+  appliquerOnglets();
+  rendreTout();
+  toast('Toutes les données ont été réinitialisées.');
 }
 
 /* ---------------- Chips de filtres ----------------
@@ -3364,10 +3714,96 @@ function initEvenements(){
 
   /* Récap par e-mail */
   document.getElementById('btn-recap').addEventListener('click', ouvrirRecap);
-  document.getElementById('btn-copier-recap').addEventListener('click', copierRecap);
+  document.getElementById('btn-copier-recap').addEventListener('click', copierTableauRecap);
   document.getElementById('btn-mailto-recap').addEventListener('click', () => {
     window.location.href = lienMailtoRecap();
   });
+
+  /* VPAT facturée */
+  document.getElementById('vpat-facturee').addEventListener('change', () => {
+    document.getElementById('champ-vpat-montant').style.display =
+      document.getElementById('vpat-facturee').value === 'oui' ? '' : 'none';
+  });
+  document.getElementById('form-vpat').addEventListener('submit', () => { validerVpat(); });
+
+  /* Réglages */
+  document.getElementById('btn-reglages').addEventListener('click', ouvrirReglages);
+  document.getElementById('reg-theme').addEventListener('change', async (ev) => {
+    memoriserModeTheme(ev.target.value);
+    await metaEcrire('themeMode', ev.target.value);
+    appliquerModeTheme(ev.target.value);
+  });
+  document.getElementById('reg-destinataire').addEventListener('change', async (ev) => {
+    await metaEcrire('destinataireRecap', ev.target.value.trim());
+  });
+  const champsParam = [
+    ['reg-vpat', 'montantVpat'],
+    ['reg-conge', 'delaiCongeActions'],
+    ['reg-locdig-sans', 'delaiLocdigSans'],
+    ['reg-locdig-avec', 'delaiLocdigAvec'],
+    ['reg-restit-sans', 'restitutionSansRetenue'],
+    ['reg-restit-avec', 'restitutionAvecRetenues'],
+    ['reg-dormance', 'seuilDormance'],
+    ['reg-rappel', 'freqRappelSauvegarde']
+  ];
+  champsParam.forEach(([idChamp, cle]) => {
+    document.getElementById(idChamp).addEventListener('change', async (ev) => {
+      const v = Math.max(idChamp === 'reg-vpat' ? 0 : 1, Number(ev.target.value) || 0);
+      ev.target.value = v;
+      await metaEcrire(cle, v);
+      if (cle === 'seuilDormance') document.getElementById('seuil-dormance').value = v;
+      await resyncTout();
+      rendreTout();
+    });
+  });
+  /* Réorganisation des onglets par glisser-déposer */
+  let ongletGlisse = null;
+  const listeOnglets = document.getElementById('reglages-onglets');
+  listeOnglets.addEventListener('dragstart', (ev) => {
+    const li = ev.target.closest('li');
+    if (li){ ongletGlisse = Number(li.dataset.idx); ev.dataTransfer.effectAllowed = 'move'; }
+  });
+  listeOnglets.addEventListener('dragover', (ev) => {
+    ev.preventDefault();
+    const li = ev.target.closest('li');
+    listeOnglets.querySelectorAll('li').forEach(x => x.classList.remove('survol'));
+    if (li) li.classList.add('survol');
+  });
+  listeOnglets.addEventListener('dragleave', (ev) => {
+    const li = ev.target.closest('li');
+    if (li) li.classList.remove('survol');
+  });
+  listeOnglets.addEventListener('drop', async (ev) => {
+    ev.preventDefault();
+    const li = ev.target.closest('li');
+    if (!li || ongletGlisse === null) return;
+    const cible = Number(li.dataset.idx);
+    if (cible !== ongletGlisse){
+      const cfg = configOnglets();
+      const deplace = cfg.splice(ongletGlisse, 1)[0];
+      cfg.splice(cible, 0, deplace);
+      await metaEcrire('ongletsConfig', cfg);
+      appliquerOnglets();
+      rendreReglagesOnglets();
+    }
+    ongletGlisse = null;
+  });
+  listeOnglets.addEventListener('change', async (ev) => {
+    if (ev.target.dataset.visibleOnglet){
+      const cfg = configOnglets();
+      const entree = cfg.find(x => x.id === ev.target.dataset.visibleOnglet);
+      if (entree){
+        entree.visible = ev.target.checked;
+        await metaEcrire('ongletsConfig', cfg);
+        appliquerOnglets();
+        rendreReglagesOnglets();
+      }
+    }
+  });
+  document.getElementById('reg-exporter').addEventListener('click', exporterDonnees);
+  document.getElementById('reg-importer').addEventListener('click', () =>
+    document.getElementById('fichier-import').click());
+  document.getElementById('reg-reset').addEventListener('click', reinitialiserDonnees);
 
   /* Boutons d'ajout des états vides */
   document.addEventListener('click', (ev) => {
@@ -3378,7 +3814,7 @@ function initEvenements(){
   });
 
   /* Navigation */
-  document.querySelectorAll('nav button').forEach(b => {
+  document.querySelectorAll('nav button[data-vue]').forEach(b => {
     b.addEventListener('click', () => {
       document.querySelectorAll('nav button').forEach(x => x.classList.remove('actif'));
       b.classList.add('actif');
@@ -3387,17 +3823,19 @@ function initEvenements(){
     });
   });
 
-  /* Thème clair / sombre */
+  /* Thème clair / sombre (la bascule rapide fixe un mode explicite) */
   document.getElementById('btn-theme').addEventListener('click', async () => {
     const nouveau = document.documentElement.dataset.theme === 'sombre' ? 'clair' : 'sombre';
-    appliquerTheme(nouveau);
-    memoriserTheme(nouveau);
-    await metaEcrire('themePrefere', nouveau);
+    appliquerModeTheme(nouveau);
+    memoriserModeTheme(nouveau);
+    await metaEcrire('themeMode', nouveau);
+    const sel = document.getElementById('reg-theme');
+    if (sel) sel.value = nouveau;
   });
   if (window.matchMedia){
-    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-      /* tant qu'aucun choix manuel n'a été fait, suivre la préférence système */
-      if (!lireThemeMemorise()) appliquerTheme(e.matches ? 'sombre' : 'clair');
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      const m = lireModeTheme();
+      if (m !== 'clair' && m !== 'sombre') appliquerModeTheme('systeme');
     });
   }
 
@@ -3455,6 +3893,8 @@ function initEvenements(){
         await retroSyncEcheance(e, true);
         toast('Échéance archivée : ' + e.titre);
         rendreTout();
+        /* VPAT réalisée : proposer la facturation des honoraires */
+        if (e.cleAuto && /^conge:.+:vpat$/.test(e.cleAuto)) ouvrirDlgVpat(e);
       }
     } else if (cible.dataset.restaurer){
       const e = etat.echeances.find(x => x.id === cible.dataset.restaurer);
@@ -3874,7 +4314,8 @@ function initEvenements(){
     } else if (cible.dataset.delaiLocdig){
       const l = etat.locationsDigitales.find(x => x.id === cible.dataset.delaiLocdig);
       if (l){
-        l.delaiNL = (l.delaiNL || 7) === 7 ? 14 : 7;
+        const pSans = param('delaiLocdigSans', 7), pAvec = param('delaiLocdigAvec', 14);
+        l.delaiNL = (l.delaiNL || pSans) === pSans ? pAvec : pSans;
         await dbEcrire('locationsDigitales', l);
         await syncLocdig(l);
         toast('Relance NL basculée à ' + l.delaiNL + ' jours (échéance recalculée).');
@@ -3912,9 +4353,9 @@ function initEvenements(){
         }
         if (l.statut === 'dossier' && !l.dossierDepose){
           l.dossierDepose = true;
-          if ((l.delaiNL || 7) === 7){
-            l.delaiNL = 14;
-            toast('Dossier déposé : relance NL passée à 14 jours.');
+          if ((l.delaiNL || param('delaiLocdigSans', 7)) === param('delaiLocdigSans', 7)){
+            l.delaiNL = param('delaiLocdigAvec', 14);
+            toast('Dossier déposé : relance NL passée à ' + l.delaiNL + ' jours.');
           }
         }
         await dbEcrire('locationsDigitales', l);
@@ -3971,14 +4412,12 @@ function initEvenements(){
     }
     return;
   }
-  /* Thème mémorisé dans les données (autre navigateur / sauvegarde importée) */
-  if (!lireThemeMemorise() &&
-      (etat.meta['themePrefere'] === 'clair' || etat.meta['themePrefere'] === 'sombre')){
-    appliquerTheme(etat.meta['themePrefere']);
-  }
+  /* Préférences mémorisées dans les données (autre navigateur / sauvegarde importée) */
+  if (!lireModeTheme() && etat.meta['themeMode']) appliquerModeTheme(etat.meta['themeMode']);
   initEvenements();
   initChips();
   initRaccourcis();
+  appliquerOnglets();
   document.getElementById('seuil-dormance').value = seuilDormance();
   rendreTout();
 })();
