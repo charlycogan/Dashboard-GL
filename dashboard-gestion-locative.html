@@ -388,6 +388,21 @@
   }
   .filtre-jour .espace{flex:1;}
 
+  /* ---------- Infobulle (survol et tap) ---------- */
+  .info-checklist{
+    position:relative; cursor:help; outline:none;
+    text-decoration:underline dotted; text-underline-offset:3px;
+  }
+  .info-checklist .infobulle{
+    display:none; position:absolute; z-index:30; top:calc(100% + 6px); left:0;
+    min-width:220px; max-width:300px; background:var(--surface); border:var(--bordure);
+    border-radius:var(--rayon-petit); box-shadow:0 6px 20px rgba(0,0,0,.22);
+    padding:10px 12px; font-size:12.5px; font-weight:400; text-align:left;
+  }
+  .infobulle span{display:block; padding:2px 0; color:var(--gris-900); white-space:normal;}
+  .infobulle span.fait-texte{color:var(--gris-500);}
+  .info-checklist:hover .infobulle, .info-checklist:focus .infobulle{display:block;}
+
   /* ---------- Bouton de thème ---------- */
   #ico-soleil{display:none;}
   html[data-theme="sombre"] #ico-soleil{display:block;}
@@ -433,6 +448,7 @@
   <button data-vue="sinistres"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5z"/></svg>Sinistres <span class="badge-onglet" id="badge-sinistres" style="display:none" title="Sinistres non clôturés">0</span></button>
   <button data-vue="devis"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M7 2.5h7L19 7v14.5H7z"/><path d="M14 2.5V7h5"/><path d="M9.5 12h6M9.5 16h6"/></svg>Devis <span class="badge-onglet" id="badge-devis" style="display:none" title="Devis en attente de réponse">0</span></button>
   <button data-vue="saisies"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5 3 20l1.5-4.5z"/></svg>À saisir <span class="badge-onglet" id="badge-saisies" style="display:none" title="Éléments restant à saisir">0</span></button>
+  <button data-vue="locdig"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Location digitale <span class="badge-onglet" id="badge-locdig" style="display:none" title="Biens publiés à suivre">0</span></button>
   <button data-vue="stats"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M5 20v-9M12 20V4M19 20v-6"/></svg>Mes stats</button>
 </nav>
 
@@ -628,6 +644,26 @@
     </div>
   </section>
 
+  <!-- ============ VUE LOCATION DIGITALE ============ -->
+  <section class="vue" id="vue-locdig">
+    <div class="barre-outils">
+      <input type="search" id="recherche-locdig" placeholder="Rechercher (adresse, propriétaire)…">
+      <select id="filtre-statut-locdig" class="filtre-chips">
+        <option value="">Tous les statuts</option>
+        <option value="publie">Publié</option>
+        <option value="dossier">Dossier déposé</option>
+        <option value="repasse">Repassé aux NL</option>
+        <option value="loue">Loué</option>
+      </select>
+      <div class="espace"></div>
+      <button class="btn" id="btn-nouvelle-locdig">＋ Nouveau bien digital</button>
+    </div>
+    <div class="carte">
+      <div id="liste-locdig"></div>
+      <p class="note-bas">Tant que le bien n'est ni repassé aux NL ni loué, une échéance « Repasser aux NL » est planifiée 7 jours après la publication — 14 jours dès qu'un dossier est déposé (même non solvable). Le bouton 7 j / 14 j bascule le délai à tout moment.</p>
+    </div>
+  </section>
+
   <!-- ============ VUE STATS ============ -->
   <section class="vue" id="vue-stats">
     <div class="barre-outils">
@@ -664,6 +700,7 @@
             <option>Sinistre</option>
             <option>Devis</option>
             <option>À saisir</option>
+            <option>Location digitale</option>
             <option>État des lieux</option>
             <option>Visite</option>
             <option>Administratif</option>
@@ -1139,6 +1176,26 @@
           <input type="text" id="sa-f-rentre-nom" maxlength="120">
         </div>
       </div>
+      <div id="bloc-bail">
+        <div class="deux-col">
+          <div class="champ">
+            <label for="sa-f-entree">Date et heure d'entrée dans les lieux</label>
+            <input type="datetime-local" id="sa-f-entree">
+          </div>
+          <div class="champ">
+            <label for="sa-f-edl-par">État des lieux réalisé par</label>
+            <select id="sa-f-edl-par">
+              <option value="moi">Moi</option>
+              <option value="constatimmo">Constatimmo</option>
+            </select>
+            <div class="aide">« Moi » : une échéance EDL est créée et l'EDL réalisé compte dans Mes stats. « Constatimmo » : rien à faire, rien n'est compté.</div>
+          </div>
+        </div>
+        <div class="champ-coche" id="champ-edl-realise" style="display:none">
+          <input type="checkbox" id="sa-f-edl-realise">
+          <label for="sa-f-edl-realise">État des lieux d'entrée réalisé</label>
+        </div>
+      </div>
       <div class="champ">
         <label for="sa-f-note">Note</label>
         <textarea id="sa-f-note" rows="2" maxlength="500" placeholder="Précisions utiles à la saisie…"></textarea>
@@ -1148,6 +1205,52 @@
         <select id="sa-f-statut">
           <option value="a_saisir">À saisir</option>
           <option value="saisi">Saisi</option>
+        </select>
+      </div>
+    </div>
+    <div class="dlg-pied">
+      <button type="button" class="btn btn-secondaire" data-fermer>Annuler</button>
+      <button type="submit" class="btn">Enregistrer</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ============ DIALOGUE LOCATION DIGITALE ============ -->
+<dialog id="dlg-locdig">
+  <div class="dlg-tete" id="dlg-locdig-titre">Nouveau bien en location digitale</div>
+  <form method="dialog" id="form-locdig">
+    <div class="dlg-corps">
+      <div class="deux-col">
+        <div class="champ">
+          <label for="ld-f-adresse">Adresse du bien *</label>
+          <input type="text" id="ld-f-adresse" required maxlength="160">
+        </div>
+        <div class="champ">
+          <label for="ld-f-proprietaire">Propriétaire</label>
+          <input type="text" id="ld-f-proprietaire" maxlength="120">
+        </div>
+      </div>
+      <div class="deux-col">
+        <div class="champ">
+          <label for="ld-f-publication">Date de publication *</label>
+          <input type="date" id="ld-f-publication" required>
+        </div>
+        <div class="champ">
+          <label for="ld-f-dossier">Dossier déposé ?</label>
+          <select id="ld-f-dossier">
+            <option value="non">Non</option>
+            <option value="oui">Oui</option>
+          </select>
+          <div class="aide">Un dossier compte même s'il n'est pas solvable. Avec dossier, la relance NL passe à 14 jours.</div>
+        </div>
+      </div>
+      <div class="champ" id="champ-statut-locdig" style="display:none">
+        <label for="ld-f-statut">Statut</label>
+        <select id="ld-f-statut">
+          <option value="publie">Publié</option>
+          <option value="dossier">Dossier déposé</option>
+          <option value="repasse">Repassé aux NL</option>
+          <option value="loue">Loué</option>
         </select>
       </div>
     </div>
@@ -1226,8 +1329,8 @@ appliquerTheme((function(){
 })());
 
 /* ---------------- Base de données locale (IndexedDB) ---------------- */
-const NOM_DB = 'gestion-locative', VERSION_DB = 3;
-const MAGASINS = ['echeances', 'conges', 'arretes', 'statsEntries', 'finsGestion', 'sinistres', 'devis', 'saisies'];
+const NOM_DB = 'gestion-locative', VERSION_DB = 4;
+const MAGASINS = ['echeances', 'conges', 'arretes', 'statsEntries', 'finsGestion', 'sinistres', 'devis', 'saisies', 'locationsDigitales'];
 let db = null;
 
 function ouvrirDB(){
@@ -1289,7 +1392,7 @@ function metaEcrire(cle, valeur){
 /* ---------------- État en mémoire ---------------- */
 const etat = {
   echeances: [], conges: [], arretes: [], statsEntries: [],
-  finsGestion: [], sinistres: [], devis: [], saisies: [], meta: {},
+  finsGestion: [], sinistres: [], devis: [], saisies: [], locationsDigitales: [], meta: {},
   granulariteStats: 'mois',
   voirArchives: false,
   calMois: {annee: new Date().getFullYear(), mois: new Date().getMonth()},
@@ -1305,6 +1408,7 @@ async function chargerEtat(){
   etat.sinistres = await dbTout('sinistres');
   etat.devis = await dbTout('devis');
   etat.saisies = await dbTout('saisies');
+  etat.locationsDigitales = await dbTout('locationsDigitales');
   const lignesMeta = await dbTout('meta');
   etat.meta = {};
   lignesMeta.forEach(l => { etat.meta[l.cle] = l.valeur; });
@@ -1367,12 +1471,39 @@ async function syncConge(c){
 async function syncArrete(a){
   const dossier = libelleDossier(a);
   const delai = (a.delaiAlerte == null || isNaN(a.delaiAlerte)) ? 7 : a.delaiAlerte;
-  await ensureAuto('arrete:' + a.id + ':restitution', a.statut !== 'restitue', {
+  /* tant que la remise des clés (donc la date limite) n'est pas renseignée
+     — dossier pré-créé depuis un congé — aucune alerte n'est planifiée */
+  const renseigne = !!a.dateLimite;
+  await ensureAuto('arrete:' + a.id + ':restitution', renseigne && a.statut !== 'restitue', {
     titre: 'Préparer la restitution du dépôt de garantie (limite le ' + fmtDate(a.dateLimite) + ')',
     type: 'Arrêté de compte', dossier,
-    dateEcheance: addDaysStr(a.dateLimite, -delai),
+    dateEcheance: renseigne ? addDaysStr(a.dateLimite, -delai) : todayStr(),
     critique: true, sourceType: 'arrete', sourceId: a.id
   }, false);
+}
+
+/* À l'enregistrement d'un congé : ouvrir (ou mettre à jour, jamais dupliquer)
+   le dossier d'arrêté de compte lié. La remise des clés sera renseignée à la
+   sortie effective (pré-remplie alors avec la fin de préavis). */
+async function lierArreteAuConge(c){
+  let a = etat.arretes.find(x => x.sourceCongeId === c.id);
+  if (!a){
+    a = {
+      id: uid(), locataire: c.locataire, adresse: c.adresse,
+      dateRemiseCles: null, montantDepot: 0,
+      retenues: false, retenuesMontant: 0, retenuesDetail: '',
+      dateLimite: null, delaiAlerte: 7,
+      statut: 'a_traiter', dateRestitution: null,
+      sourceCongeId: c.id, creeLe: new Date().toISOString()
+    };
+    etat.arretes.push(a);
+    await dbEcrire('arretes', a);
+  } else {
+    a.locataire = c.locataire;
+    a.adresse = c.adresse;
+    await dbEcrire('arretes', a);
+    await syncArrete(a);
+  }
 }
 
 /* ---- Fin de gestion ---- */
@@ -1491,6 +1622,51 @@ async function syncSaisie(s){
     dateEcheance: addDaysStr(s.dateReception, 3),
     critique: false, sourceType: 'saisie', sourceId: s.id
   }, false);
+  /* EDL d'entrée des baux réalisés par moi (rien si Constatimmo) */
+  const cleEdl = 'saisie:' + s.id + ':edl';
+  const doitExister = s.type === 'bail' && s.edlPar === 'moi' && !s.edlRealise && !!s.dateEntree;
+  if (doitExister){
+    /* décocher « EDL réalisé » doit pouvoir recréer l'échéance archivée */
+    const archivees = etat.echeances.filter(e => e.cleAuto === cleEdl && e.statut === 'archivee');
+    for (const e of archivees){
+      etat.echeances = etat.echeances.filter(x => x.id !== e.id);
+      await dbSupprimer('echeances', e.id);
+    }
+  }
+  const heure = s.dateEntree && s.dateEntree.length > 10 ? s.dateEntree.slice(11, 16) : '';
+  await ensureAuto(cleEdl, doitExister, {
+    titre: "Réaliser l'état des lieux d'entrée — " + s.adresse + (heure ? ' (' + heure + ')' : ''),
+    type: 'État des lieux',
+    dossier: s.proprietaire + ' — ' + s.adresse + (s.locataire ? ' (' + s.locataire + ')' : ''),
+    dateEcheance: s.dateEntree ? s.dateEntree.slice(0, 10) : s.dateEffet,
+    critique: false, sourceType: 'saisie', sourceId: s.id
+  }, false);
+}
+
+/* Répercussion inverse : cocher/décocher une échéance EDL dans l'échéancier
+   met à jour le champ « EDL réalisé » de l'entrée À saisir (et donc les stats). */
+async function retroSyncEcheance(e, fait){
+  if (e.cleAuto && e.cleAuto.startsWith('saisie:') && e.cleAuto.endsWith(':edl')){
+    const s = etat.saisies.find(x => x.id === e.sourceId);
+    if (s && !!s.edlRealise !== fait){
+      s.edlRealise = fait;
+      await dbEcrire('saisies', s);
+    }
+  }
+}
+
+/* ---- Location digitale ---- */
+const LIBELLE_STATUT_LOCDIG = {publie:'Publié', dossier:'Dossier déposé', repasse:'Repassé aux NL', loue:'Loué'};
+
+async function syncLocdig(l){
+  const actif = l.statut === 'publie' || l.statut === 'dossier';
+  await ensureAuto('locdig:' + l.id + ':nl', actif, {
+    titre: 'Repasser aux NL — ' + l.adresse,
+    type: 'Location digitale',
+    dossier: (l.proprietaire ? l.proprietaire + ' — ' : '') + l.adresse,
+    dateEcheance: addDaysStr(l.datePublication, l.delaiNL || 7),
+    critique: false, sourceType: 'locdig', sourceId: l.id
+  }, false);
 }
 
 async function supprimerEcheancesLiees(sourceId){
@@ -1509,7 +1685,8 @@ const CLASSE_STATUT = {
   recu:'st-bleu', edl_planifie:'st-orange', parti:'st-orange', cloture:'st-vert',
   a_traiter:'st-bleu', en_cours:'st-orange', restitue:'st-vert', solde:'st-vert',
   demande:'st-bleu', propose:'st-orange', accepte:'st-vert', refuse:'st-gris',
-  a_saisir:'st-bleu', saisi:'st-vert'
+  a_saisir:'st-bleu', saisi:'st-vert',
+  publie:'st-bleu', dossier:'st-orange', repasse:'st-gris', loue:'st-vert'
 };
 function classeStatut(s){ return 'select-statut ' + (CLASSE_STATUT[s] || 'st-gris'); }
 
@@ -1703,7 +1880,7 @@ function rendreArretes(){
   const liste = etat.arretes
     .filter(a => (!recherche || (a.locataire + ' ' + a.adresse).toLowerCase().includes(recherche)) &&
                  (!fStatut || a.statut === fStatut))
-    .sort((a, b) => a.dateLimite.localeCompare(b.dateLimite));
+    .sort((a, b) => (a.dateLimite || '9999-12-31').localeCompare(b.dateLimite || '9999-12-31'));
 
   if (!liste.length){
     document.getElementById('liste-arretes').innerHTML =
@@ -1711,10 +1888,12 @@ function rendreArretes(){
     return;
   }
   const lignes = liste.map(a => {
-    const d = diffJours(a.dateLimite);
-    const limBadge = a.statut === 'restitue' ? ''
-      : d < 0 ? ' <span class="badge badge-haute">dépassée</span>'
-      : d <= 7 ? ' <span class="badge badge-moyenne">J-' + d + '</span>' : '';
+    let limBadge = '';
+    if (a.statut !== 'restitue' && a.dateLimite){
+      const d = diffJours(a.dateLimite);
+      limBadge = d < 0 ? ' <span class="badge badge-haute">dépassée</span>'
+        : d <= 7 ? ' <span class="badge badge-moyenne">J-' + d + '</span>' : '';
+    }
     const retenues = a.retenues
       ? '<span class="badge badge-moyenne">Oui</span><div class="sous-info">' +
         fmtEuros(a.retenuesMontant) + (a.retenuesDetail ? ' — ' + echap(a.retenuesDetail) : '') + '</div>'
@@ -1724,11 +1903,13 @@ function rendreArretes(){
     const restitue = a.statut === 'restitue' && a.dateRestitution
       ? '<div class="sous-info">restitué le ' + fmtDate(a.dateRestitution) + '</div>' : '';
     return '<tr>' +
-      '<td><div class="nom-loc">' + echap(a.locataire) + '</div><div class="sous-info">' + echap(a.adresse) + '</div></td>' +
-      '<td>' + fmtDate(a.dateRemiseCles) + '</td>' +
+      '<td><div class="nom-loc">' + echap(a.locataire) + '</div><div class="sous-info">' + echap(a.adresse) +
+        (a.sourceCongeId ? ' · issu d\'un congé' : '') + '</div></td>' +
+      '<td>' + (a.dateRemiseCles ? fmtDate(a.dateRemiseCles) : '<span class="sous-info">à la sortie du locataire</span>') + '</td>' +
       '<td>' + fmtEuros(a.montantDepot) + '</td>' +
       '<td>' + retenues + '</td>' +
-      '<td><strong>' + fmtDate(a.dateLimite) + '</strong>' + limBadge + '</td>' +
+      '<td>' + (a.dateLimite ? '<strong>' + fmtDate(a.dateLimite) + '</strong>' + limBadge
+                             : '<span class="sous-info">—</span>') + '</td>' +
       '<td><select class="' + classeStatut(a.statut) + '" data-statut-arrete="' + a.id + '">' + options + '</select>' + restitue + '</td>' +
       '<td class="cell-actions">' +
         '<button class="btn btn-secondaire btn-petit" data-modif-arrete="' + a.id + '">Modifier</button> ' +
@@ -1762,9 +1943,14 @@ function rendreFins(){
       : d <= 14 ? ' <span class="badge badge-moyenne">J-' + d + '</span>' : '';
     const cl = f.checklist || [];
     const faits = cl.filter(x => x.fait).length;
-    const checklist = cl.length
-      ? faits + ' / ' + cl.length + (faits === cl.length ? ' <span class="badge badge-vert">complète</span>' : '')
-      : '—';
+    let checklist = '—';
+    if (cl.length){
+      const detail = '<span class="infobulle" role="tooltip">' + cl.map(x =>
+        '<span class="' + (x.fait ? 'fait-texte' : '') + '">' + echap(x.libelle) + '</span>').join('') + '</span>';
+      checklist = '<span class="info-checklist" tabindex="0" aria-label="Détail de la checklist">' +
+        faits + ' / ' + cl.length + detail + '</span>' +
+        (faits === cl.length ? ' <span class="badge badge-vert">complète</span>' : '');
+    }
     const options = Object.keys(LIBELLE_STATUT_FIN).map(s =>
       '<option value="' + s + '"' + (f.statut === s ? ' selected' : '') + '>' + LIBELLE_STATUT_FIN[s] + '</option>').join('');
     return '<tr>' +
@@ -1927,11 +2113,22 @@ function rendreSaisies(){
     return;
   }
   const lignes = liste.map(s => {
-    const rentre = s.type === 'mandat'
-      ? (s.rentrePar === 'moi'
-          ? '<span class="badge badge-vert">Moi</span>'
-          : '<span class="badge badge-statut">' + (s.rentreParNom ? echap(s.rentreParNom) : 'Quelqu\'un d\'autre') + '</span>')
-      : '—';
+    let rentre = '—';
+    if (s.type === 'mandat'){
+      rentre = s.rentrePar === 'moi'
+        ? '<span class="badge badge-vert">Moi</span>'
+        : '<span class="badge badge-statut">' + (s.rentreParNom ? echap(s.rentreParNom) : 'Quelqu\'un d\'autre') + '</span>';
+    } else if (s.type === 'bail' && s.edlPar){
+      rentre = s.edlPar === 'constatimmo'
+        ? '<span class="badge badge-statut">EDL Constatimmo</span>'
+        : (s.edlRealise
+            ? '<span class="badge badge-vert">EDL réalisé</span>'
+            : '<span class="badge badge-moyenne">EDL à faire</span>');
+      if (s.dateEntree){
+        rentre += '<div class="sous-info">entrée le ' + fmtDate(s.dateEntree.slice(0, 10)) +
+          (s.dateEntree.length > 10 ? ' à ' + s.dateEntree.slice(11, 16) : '') + '</div>';
+      }
+    }
     const options = Object.keys(LIBELLE_STATUT_SAISIE).map(x =>
       '<option value="' + x + '"' + (s.statut === x ? ' selected' : '') + '>' + LIBELLE_STATUT_SAISIE[x] + '</option>').join('');
     return '<tr>' +
@@ -1951,13 +2148,68 @@ function rendreSaisies(){
   }).join('');
   document.getElementById('liste-saisies').innerHTML =
     '<table><thead><tr><th>Type</th><th>Propriétaire / lot</th><th>Reçu le</th>' +
-    '<th>Date d\'effet</th><th>Rentré par</th><th>Statut</th><th></th></tr></thead><tbody>' +
+    '<th>Date d\'effet</th><th>Rentré par / EDL</th><th>Statut</th><th></th></tr></thead><tbody>' +
     lignes + '</tbody></table>';
+}
+
+/* ---------------- Rendu : location digitale ---------------- */
+function rendreLocdig(){
+  const recherche = document.getElementById('recherche-locdig').value.trim().toLowerCase();
+  const fStatut = document.getElementById('filtre-statut-locdig').value;
+  const liste = etat.locationsDigitales
+    .filter(l => (!recherche || (l.adresse + ' ' + (l.proprietaire || '')).toLowerCase().includes(recherche)) &&
+                 (!fStatut || l.statut === fStatut))
+    .sort((a, b) => {
+      const ca = (a.statut === 'repasse' || a.statut === 'loue') ? 1 : 0;
+      const cb = (b.statut === 'repasse' || b.statut === 'loue') ? 1 : 0;
+      if (ca !== cb) return ca - cb;
+      return addDaysStr(a.datePublication, a.delaiNL || 7).localeCompare(addDaysStr(b.datePublication, b.delaiNL || 7));
+    });
+
+  if (!liste.length){
+    document.getElementById('liste-locdig').innerHTML =
+      etatVide('Aucun bien publié en location digitale.', 'btn-nouvelle-locdig', '＋ Nouveau bien digital');
+    return;
+  }
+  const lignes = liste.map(l => {
+    const delai = l.delaiNL || 7;
+    const actif = l.statut === 'publie' || l.statut === 'dossier';
+    const dateRelance = addDaysStr(l.datePublication, delai);
+    let relance = '<span class="sous-info">—</span>';
+    if (actif){
+      const d = diffJours(dateRelance);
+      const badge = d < 0 ? ' <span class="badge badge-haute">' + Math.abs(d) + ' j de retard</span>'
+        : d === 0 ? ' <span class="badge badge-moyenne">aujourd\'hui</span>' : '';
+      relance = '<strong>' + fmtDate(dateRelance) + '</strong> <span class="badge badge-type">' + delai + ' j</span>' + badge +
+        ' <button type="button" class="btn btn-secondaire btn-petit" data-delai-locdig="' + l.id +
+        '" title="Basculer le délai de relance">→ ' + (delai === 7 ? 14 : 7) + ' j</button>';
+    }
+    const dossierDep = l.dossierDepose
+      ? '<span class="badge badge-vert">Oui</span>'
+      : '<span class="badge badge-statut">Non</span>';
+    const options = Object.keys(LIBELLE_STATUT_LOCDIG).map(x =>
+      '<option value="' + x + '"' + (l.statut === x ? ' selected' : '') + '>' + LIBELLE_STATUT_LOCDIG[x] + '</option>').join('');
+    return '<tr>' +
+      '<td><div class="nom-loc">' + echap(l.adresse) + '</div>' +
+        (l.proprietaire ? '<div class="sous-info">' + echap(l.proprietaire) + '</div>' : '') + '</td>' +
+      '<td>' + fmtDate(l.datePublication) + '</td>' +
+      '<td>' + dossierDep + '</td>' +
+      '<td>' + relance + '</td>' +
+      '<td><select class="' + classeStatut(l.statut) + '" data-statut-locdig="' + l.id + '">' + options + '</select></td>' +
+      '<td class="cell-actions">' +
+        '<button class="btn btn-secondaire btn-petit" data-modif-locdig="' + l.id + '">Modifier</button> ' +
+        '<button class="btn btn-danger btn-petit" data-suppr-locdig="' + l.id + '">Supprimer</button></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('liste-locdig').innerHTML =
+    '<table><thead><tr><th>Bien</th><th>Publié le</th><th>Dossier déposé</th>' +
+    '<th>Relance NL</th><th>Statut</th><th></th></tr></thead><tbody>' + lignes + '</tbody></table>';
 }
 
 /* ---------------- Stats ---------------- */
 const KPIS = [
-  {id:'edl_entree', titre:"États des lieux d'entrée réalisés", type:'compte', series:['edl_entree']},
+  {id:'edl_entree', titre:"États des lieux d'entrée réalisés", type:'compte', series:['edl_entree'], auto:true,
+   aide:'Compté automatiquement : EDL des baux (onglet À saisir) réalisés par moi, à la date d\'entrée dans les lieux.'},
   {id:'honoraires', titre:'Honoraires de vacation cumulés', type:'montant', series:['honoraires'],
    aide:'Visites patrimoniales et suivis de sinistres.'},
   {id:'attrition', titre:'Attrition du portefeuille (solde net)', type:'net', series:[],
@@ -2007,7 +2259,14 @@ function mandatsEntres(deb, fin){
   return etat.saisies.filter(s => s.type === 'mandat' && s.rentrePar === 'moi' &&
     s.dateEffet >= deb && s.dateEffet <= fin).length;
 }
+/* EDL d'entrée : comptés depuis les baux de l'onglet À saisir, réalisés par moi */
+function dateEdl(s){ return (s.dateEntree || '').slice(0, 10) || s.dateEffet; }
+function edlEntreeRealises(deb, fin){
+  return etat.saisies.filter(s => s.type === 'bail' && s.edlPar === 'moi' && s.edlRealise &&
+    dateEdl(s) >= deb && dateEdl(s) <= fin).length;
+}
 function valeurKpi(kpi, deb, fin){
+  if (kpi.id === 'edl_entree') return edlEntreeRealises(deb, fin);
   if (kpi.type === 'net') return mandatsEntres(deb, fin) - pertesGestion(deb, fin);
   return sommeSerie(kpi.series[0], deb, fin);
 }
@@ -2070,7 +2329,11 @@ function rendreStats(){
     }
 
     let saisie;
-    if (kpi.type === 'net'){
+    if (kpi.id === 'edl_entree'){
+      saisie =
+        '<div class="ligne-saisie"><span class="sous-info">Aucune saisie : alimenté par les baux de ' +
+        'l\'onglet « À saisir » (EDL réalisés par moi).</span></div>';
+    } else if (kpi.type === 'net'){
       saisie =
         '<div class="ligne-saisie"><span class="sous-info">Aucune saisie : alimenté par les onglets ' +
         '« À saisir » (mandats rentrés par moi) et « Fin de gestion » (pertes).</span></div>';
@@ -2192,6 +2455,8 @@ function rendreBadgesNav(){
   majBadge('badge-devis', etat.devis.filter(d =>
     d.statut === 'demande' || d.statut === 'recu' || d.statut === 'propose').length);
   majBadge('badge-saisies', etat.saisies.filter(s => s.statut === 'a_saisir').length);
+  majBadge('badge-locdig', etat.locationsDigitales.filter(l =>
+    l.statut === 'publie' || l.statut === 'dossier').length);
 }
 
 /* ---------------- Rendu global ---------------- */
@@ -2205,6 +2470,7 @@ function rendreTout(){
   rendreSinistres();
   rendreDevis();
   rendreSaisies();
+  rendreLocdig();
   rendreStats();
   rendreBandeau();
   rendreBadgesNav();
@@ -2225,6 +2491,7 @@ async function exporterDonnees(){
       sinistres: etat.sinistres,
       devis: etat.devis,
       saisies: etat.saisies,
+      locationsDigitales: etat.locationsDigitales,
       meta: Object.keys(etat.meta).map(cle => ({cle, valeur: etat.meta[cle]}))
     }
   };
@@ -2265,6 +2532,7 @@ async function importerDonnees(fichier){
   for (const s of (d.sinistres || [])) await dbEcrire('sinistres', s);
   for (const v of (d.devis || [])) await dbEcrire('devis', v);
   for (const x of (d.saisies || [])) await dbEcrire('saisies', x);
+  for (const x of (d.locationsDigitales || [])) await dbEcrire('locationsDigitales', x);
   for (const l of (d.meta || [])) await dbEcrire('meta', l);
   await chargerEtat();
   rendreTout();
@@ -2373,10 +2641,11 @@ async function validerConge(){
   } else {
     c = Object.assign({id: uid(), statut: 'recu', creeLe: new Date().toISOString()}, donnees);
     etat.conges.push(c);
-    toast('Congé enregistré. Une échéance « Planifier l\'EDL de sortie » a été créée.');
+    toast('Congé enregistré : échéance EDL créée et dossier d\'arrêté de compte ouvert automatiquement.');
   }
   await dbEcrire('conges', c);
   await syncConge(c);
+  await lierArreteAuConge(c);
   rendreTout();
 }
 
@@ -2407,7 +2676,13 @@ function ouvrirDlgArrete(a){
   document.getElementById('dlg-arrete-titre').textContent = a ? 'Modifier l\'arrêté de compte' : 'Nouvel arrêté de compte';
   document.getElementById('ar-f-locataire').value = a ? a.locataire : '';
   document.getElementById('ar-f-adresse').value = a ? a.adresse : '';
-  document.getElementById('ar-f-cles').value = a ? a.dateRemiseCles : todayStr();
+  /* dossier pré-créé depuis un congé : remise des clés pré-remplie avec la fin de préavis */
+  let clesDefaut = todayStr();
+  if (a && !a.dateRemiseCles && a.sourceCongeId){
+    const cg = etat.conges.find(x => x.id === a.sourceCongeId);
+    if (cg && cg.dateFinPreavis) clesDefaut = cg.dateFinPreavis;
+  }
+  document.getElementById('ar-f-cles').value = a ? (a.dateRemiseCles || clesDefaut) : todayStr();
   document.getElementById('ar-f-depot').value = a ? (a.montantDepot != null ? a.montantDepot : '') : '';
   document.getElementById('ar-f-retenues').checked = a ? !!a.retenues : false;
   document.getElementById('ar-f-ret-montant').value = a && a.retenuesMontant != null ? a.retenuesMontant : '';
@@ -2421,7 +2696,7 @@ function ouvrirDlgArrete(a){
   }
   majBlocRetenues();
   majChampRestitution();
-  if (!a) recalculerLimiteRestitution();
+  if (!a || !a.dateLimite) recalculerLimiteRestitution();
   document.getElementById('dlg-arrete').showModal();
 }
 
@@ -2742,6 +3017,9 @@ function majChampsSaisie(){
   document.getElementById('bloc-rentre-par').style.display = type === 'mandat' ? '' : 'none';
   document.getElementById('champ-rentre-nom').style.display =
     (type === 'mandat' && document.getElementById('sa-f-rentre').value === 'autre') ? '' : 'none';
+  document.getElementById('bloc-bail').style.display = type === 'bail' ? '' : 'none';
+  document.getElementById('champ-edl-realise').style.display =
+    (type === 'bail' && document.getElementById('sa-f-edl-par').value === 'moi') ? '' : 'none';
 }
 
 function ouvrirDlgSaisie(s){
@@ -2755,6 +3033,9 @@ function ouvrirDlgSaisie(s){
   document.getElementById('sa-f-effet').value = s ? s.dateEffet : todayStr();
   document.getElementById('sa-f-rentre').value = s ? (s.rentrePar || 'moi') : 'moi';
   document.getElementById('sa-f-rentre-nom').value = s ? (s.rentreParNom || '') : '';
+  document.getElementById('sa-f-entree').value = s ? (s.dateEntree || '') : '';
+  document.getElementById('sa-f-edl-par').value = s ? (s.edlPar || 'moi') : 'moi';
+  document.getElementById('sa-f-edl-realise').checked = s ? !!s.edlRealise : false;
   document.getElementById('sa-f-note').value = s ? (s.note || '') : '';
   document.getElementById('champ-statut-saisie').style.display = s ? '' : 'none';
   if (s) document.getElementById('sa-f-statut').value = s.statut;
@@ -2778,6 +3059,10 @@ async function validerSaisie(){
     rentrePar: type === 'mandat' ? rentrePar : null,
     rentreParNom: (type === 'mandat' && rentrePar === 'autre')
       ? document.getElementById('sa-f-rentre-nom').value.trim() : '',
+    dateEntree: type === 'bail' ? (document.getElementById('sa-f-entree').value || null) : null,
+    edlPar: type === 'bail' ? document.getElementById('sa-f-edl-par').value : null,
+    edlRealise: (type === 'bail' && document.getElementById('sa-f-edl-par').value === 'moi')
+      ? document.getElementById('sa-f-edl-realise').checked : false,
     note: document.getElementById('sa-f-note').value.trim()
   };
   let s;
@@ -2792,6 +3077,57 @@ async function validerSaisie(){
   }
   await dbEcrire('saisies', s);
   await syncSaisie(s);
+  rendreTout();
+}
+
+/* ---------------- Dialogues : location digitale ---------------- */
+let locdigEnEdition = null;
+
+function ouvrirDlgLocdig(l){
+  locdigEnEdition = l || null;
+  document.getElementById('dlg-locdig-titre').textContent =
+    l ? 'Modifier le bien digital' : 'Nouveau bien en location digitale';
+  document.getElementById('ld-f-adresse').value = l ? l.adresse : '';
+  document.getElementById('ld-f-proprietaire').value = l ? (l.proprietaire || '') : '';
+  document.getElementById('ld-f-publication').value = l ? l.datePublication : todayStr();
+  document.getElementById('ld-f-dossier').value = l ? (l.dossierDepose ? 'oui' : 'non') : 'non';
+  document.getElementById('champ-statut-locdig').style.display = l ? '' : 'none';
+  if (l) document.getElementById('ld-f-statut').value = l.statut;
+  document.getElementById('dlg-locdig').showModal();
+}
+
+async function validerLocdig(){
+  const adresse = document.getElementById('ld-f-adresse').value.trim();
+  const publication = document.getElementById('ld-f-publication').value;
+  if (!adresse || !publication) return;
+  const dossierDepose = document.getElementById('ld-f-dossier').value === 'oui';
+  const donnees = {
+    adresse,
+    proprietaire: document.getElementById('ld-f-proprietaire').value.trim(),
+    datePublication: publication,
+    dossierDepose
+  };
+  let l;
+  if (locdigEnEdition){
+    l = locdigEnEdition;
+    const dossierAvant = !!l.dossierDepose;
+    Object.assign(l, donnees, {statut: document.getElementById('ld-f-statut').value});
+    /* changement de l'indicateur dossier : revenir au délai par défaut (7 ou 14 j) */
+    if (dossierDepose !== dossierAvant) l.delaiNL = dossierDepose ? 14 : 7;
+    if (l.statut === 'dossier') l.dossierDepose = true;
+    toast('Bien digital modifié.');
+  } else {
+    l = Object.assign({
+      id: uid(),
+      statut: dossierDepose ? 'dossier' : 'publie',
+      delaiNL: dossierDepose ? 14 : 7,
+      creeLe: new Date().toISOString()
+    }, donnees);
+    etat.locationsDigitales.push(l);
+    toast('Bien enregistré. Relance « Repasser aux NL » planifiée à ' + l.delaiNL + ' jours.');
+  }
+  await dbEcrire('locationsDigitales', l);
+  await syncLocdig(l);
   rendreTout();
 }
 
@@ -2833,7 +3169,8 @@ const RACCOURCIS = {
   fins:{recherche:'recherche-fin', nouveau:'btn-nouvelle-fin'},
   sinistres:{recherche:'recherche-sinistre', nouveau:'btn-nouveau-sinistre'},
   devis:{recherche:'recherche-devis', nouveau:'btn-nouveau-devis'},
-  saisies:{recherche:'recherche-saisie', nouveau:'btn-nouvelle-saisie'}
+  saisies:{recherche:'recherche-saisie', nouveau:'btn-nouvelle-saisie'},
+  locdig:{recherche:'recherche-locdig', nouveau:'btn-nouvelle-locdig'}
 };
 function initRaccourcis(){
   document.addEventListener('keydown', (e) => {
@@ -2975,6 +3312,7 @@ function initEvenements(){
         e.statut = 'archivee';
         e.faitLe = new Date().toISOString();
         await dbEcrire('echeances', e);
+        await retroSyncEcheance(e, true);
         toast('Échéance archivée : ' + e.titre);
         rendreTout();
       }
@@ -2984,6 +3322,7 @@ function initEvenements(){
         e.statut = 'active';
         delete e.faitLe;
         await dbEcrire('echeances', e);
+        await retroSyncEcheance(e, false);
         rendreTout();
       }
     } else if (cible.dataset.modifEch){
@@ -3380,7 +3719,64 @@ function initEvenements(){
   });
   document.getElementById('sa-f-type').addEventListener('change', majChampsSaisie);
   document.getElementById('sa-f-rentre').addEventListener('change', majChampsSaisie);
+  document.getElementById('sa-f-edl-par').addEventListener('change', majChampsSaisie);
   document.getElementById('form-saisie').addEventListener('submit', () => { validerSaisie(); });
+
+  /* Location digitale */
+  ['recherche-locdig', 'filtre-statut-locdig'].forEach(id =>
+    document.getElementById(id).addEventListener('input', rendreLocdig));
+  document.getElementById('btn-nouvelle-locdig').addEventListener('click', () => ouvrirDlgLocdig(null));
+  document.getElementById('vue-locdig').addEventListener('click', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.modifLocdig){
+      const l = etat.locationsDigitales.find(x => x.id === cible.dataset.modifLocdig);
+      if (l) ouvrirDlgLocdig(l);
+    } else if (cible.dataset.delaiLocdig){
+      const l = etat.locationsDigitales.find(x => x.id === cible.dataset.delaiLocdig);
+      if (l){
+        l.delaiNL = (l.delaiNL || 7) === 7 ? 14 : 7;
+        await dbEcrire('locationsDigitales', l);
+        await syncLocdig(l);
+        toast('Relance NL basculée à ' + l.delaiNL + ' jours (échéance recalculée).');
+        rendreTout();
+      }
+    } else if (cible.dataset.supprLocdig){
+      const l = etat.locationsDigitales.find(x => x.id === cible.dataset.supprLocdig);
+      if (l && confirm('Supprimer le bien « ' + l.adresse + ' » ? L\'échéance de relance liée sera aussi supprimée.')){
+        const liees = etat.echeances.filter(e => e.sourceId === l.id);
+        etat.locationsDigitales = etat.locationsDigitales.filter(x => x.id !== l.id);
+        await dbSupprimer('locationsDigitales', l.id);
+        await supprimerEcheancesLiees(l.id);
+        rendreTout();
+        toastAnnulable('Bien « ' + l.adresse + ' » supprimé.', async () => {
+          etat.locationsDigitales.push(l);
+          await dbEcrire('locationsDigitales', l);
+          for (const e of liees){ etat.echeances.push(e); await dbEcrire('echeances', e); }
+          rendreTout();
+        });
+      }
+    }
+  });
+  document.getElementById('vue-locdig').addEventListener('change', async (ev) => {
+    const cible = ev.target;
+    if (cible.dataset.statutLocdig){
+      const l = etat.locationsDigitales.find(x => x.id === cible.dataset.statutLocdig);
+      if (l){
+        l.statut = cible.value;
+        if (l.statut === 'dossier' && !l.dossierDepose){
+          l.dossierDepose = true;
+          if ((l.delaiNL || 7) === 7){
+            l.delaiNL = 14;
+            toast('Dossier déposé : relance NL passée à 14 jours.');
+          }
+        }
+        await dbEcrire('locationsDigitales', l);
+        await syncLocdig(l);
+        rendreTout();
+      }
+    }
+  });
+  document.getElementById('form-locdig').addEventListener('submit', () => { validerLocdig(); });
 
   /* Dialogues : boutons Annuler */
   document.querySelectorAll('dialog [data-fermer]').forEach(b =>
