@@ -6,224 +6,339 @@
 <title>Gestion locative — Mon tableau de bord</title>
 <style>
   :root{
-    --bleu:#1f4e79; --bleu-clair:#eaf1f8; --bleu-vif:#2e6da4;
-    --fond:#f3f4f6; --carte:#ffffff; --bord:#e2e5ea;
-    --texte:#1f2937; --texte-2:#6b7280;
-    --rouge:#b3261e; --rouge-fond:#fdecea;
-    --orange:#b45309; --orange-fond:#fef3e2;
-    --vert:#1a7f4b; --vert-fond:#e6f4ec;
-    --gris-fond:#eef0f3;
-    --ambre-fond:#fff7e0; --ambre-bord:#e6c878; --ambre-texte:#7a5c00;
+    /* Palette corporate : bleus + gris neutres */
+    --bleu-700:#163e63; --bleu-600:#1d5c95; --bleu-500:#2f74b5;
+    --bleu-200:#bcd4ea; --bleu-100:#e1ecf6; --bleu-50:#f2f7fc;
+    --gris-900:#1d2733; --gris-700:#3f4c5d; --gris-500:#67768a;
+    --gris-300:#d6dce4; --gris-200:#e7ebf0; --gris-100:#f2f4f8; --gris-50:#f8fafc;
+    /* Sémantique : rouge = retard, orange = à relancer, vert = fait, bleu = info */
+    --rouge:#b3261e; --rouge-100:#fceae8;
+    --orange:#9a5b00; --orange-500:#d98324; --orange-100:#fcf0de;
+    --vert:#1c7a4d; --vert-100:#e4f3eb;
+    --fond:var(--gris-100); --surface:#ffffff;
+    --bordure:.5px solid var(--gris-300);
+    --rayon:10px; --rayon-petit:7px;
+    --transition:150ms ease;
   }
   *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
+  html,body{margin:0; padding:0;}
   body{
-    font-family:"Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
-    background:var(--fond); color:var(--texte); font-size:15px; line-height:1.45;
+    font-family:-apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background:var(--fond); color:var(--gris-900); font-size:14px; line-height:1.5;
   }
+  .ico{flex-shrink:0; vertical-align:-2px;}
+  :focus-visible{outline:2px solid var(--bleu-500); outline-offset:2px; border-radius:4px;}
+
   /* ---------- En-tête ---------- */
   header{
-    background:var(--bleu); color:#fff; padding:14px 28px;
+    background:var(--bleu-700); color:#fff; padding:16px 24px;
     display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
   }
-  header h1{font-size:19px; margin:0; font-weight:600; letter-spacing:.2px;}
-  header .sous-titre{font-size:12.5px; opacity:.8;}
-  .actions-haut{display:flex; gap:10px; align-items:center;}
+  header h1{font-size:17px; margin:0; font-weight:500; letter-spacing:.2px;}
+  header .sous-titre{font-size:12.5px; opacity:.75; font-weight:400;}
+  .actions-haut{display:flex; gap:8px; align-items:center;}
+
+  /* ---------- Boutons ---------- */
   .btn{
-    border:1px solid transparent; border-radius:6px; padding:8px 14px; font-size:14px;
-    cursor:pointer; background:var(--bleu-vif); color:#fff; font-family:inherit;
+    display:inline-flex; align-items:center; gap:6px; justify-content:center;
+    border:.5px solid transparent; border-radius:var(--rayon-petit); padding:8px 16px;
+    font-size:13.5px; font-weight:500; cursor:pointer; font-family:inherit;
+    background:var(--bleu-600); color:#fff;
+    transition:background var(--transition), border-color var(--transition), color var(--transition);
   }
-  .btn:hover{filter:brightness(1.08);}
-  .btn-blanc{background:#fff; color:var(--bleu); border-color:#fff;}
-  .btn-blanc:hover{background:#f0f4f9;}
-  .btn-secondaire{background:#fff; color:var(--bleu); border-color:var(--bord);}
-  .btn-secondaire:hover{background:var(--bleu-clair);}
-  .btn-danger{background:#fff; color:var(--rouge); border-color:var(--bord);}
-  .btn-danger:hover{background:var(--rouge-fond);}
-  .btn-petit{padding:4px 9px; font-size:12.5px; border-radius:5px;}
+  .btn:hover{background:var(--bleu-500);}
+  .btn-blanc{background:rgba(255,255,255,.12); color:#fff; border-color:rgba(255,255,255,.4);}
+  .btn-blanc:hover{background:rgba(255,255,255,.22);}
+  .btn-secondaire{background:var(--surface); color:var(--bleu-600); border-color:var(--gris-300);}
+  .btn-secondaire:hover{background:var(--bleu-50); border-color:var(--bleu-500);}
+  .btn-danger{background:var(--surface); color:var(--rouge); border-color:var(--gris-300);}
+  .btn-danger:hover{background:var(--rouge-100); border-color:var(--rouge);}
+  .btn-petit{padding:4px 10px; font-size:12.5px;}
+
   /* ---------- Bandeau sauvegarde ---------- */
   #bandeau-sauvegarde{
-    display:none; background:var(--ambre-fond); border-bottom:1px solid var(--ambre-bord);
-    color:var(--ambre-texte); padding:8px 28px; font-size:13.5px;
+    display:none; background:var(--orange-100); border-bottom:var(--bordure);
+    border-bottom-color:#ecd9b8; color:var(--orange); padding:8px 24px; font-size:13px;
     align-items:center; gap:12px; justify-content:center;
   }
   #bandeau-sauvegarde.visible{display:flex;}
-  /* ---------- Navigation ---------- */
+
+  /* ---------- Navigation (collante) ---------- */
   nav{
-    background:#fff; border-bottom:1px solid var(--bord); padding:0 28px;
-    display:flex; gap:4px; flex-wrap:wrap;
+    position:sticky; top:0; z-index:40;
+    background:var(--surface); border-bottom:var(--bordure); padding:0 24px;
+    display:flex; gap:2px; flex-wrap:wrap;
   }
   nav button{
-    background:none; border:none; border-bottom:3px solid transparent;
-    padding:13px 16px 10px; font-size:14.5px; cursor:pointer; color:var(--texte-2);
-    font-family:inherit; display:flex; align-items:center; gap:7px;
+    display:flex; align-items:center; gap:7px;
+    background:none; border:none; border-bottom:2px solid transparent;
+    padding:12px 14px 10px; font-family:inherit; font-size:14px; font-weight:400;
+    color:var(--gris-500); cursor:pointer;
+    transition:color var(--transition), border-color var(--transition);
   }
-  nav button:hover{color:var(--bleu);}
-  nav button.actif{color:var(--bleu); border-bottom-color:var(--bleu); font-weight:600;}
+  nav button:hover{color:var(--bleu-600);}
+  nav button.actif{color:var(--bleu-700); border-bottom-color:var(--bleu-600); font-weight:500;}
   .badge-onglet{
-    background:var(--gris-fond); color:var(--texte-2); border-radius:10px; font-size:11.5px;
-    padding:1px 7px; font-weight:600; min-width:18px; text-align:center; line-height:1.5;
+    display:inline-block; background:var(--gris-200); color:var(--gris-700);
+    border-radius:999px; font-size:11.5px; padding:1px 7px; font-weight:500;
+    min-width:20px; text-align:center; transition:background var(--transition);
   }
-  nav button.actif .badge-onglet{background:var(--bleu-clair); color:var(--bleu);}
+  nav button.actif .badge-onglet{background:var(--bleu-100); color:var(--bleu-700);}
   nav button.actif .badge-onglet-rouge, nav button .badge-onglet-rouge{background:var(--rouge); color:#fff;}
-  nav button.actif .badge-onglet-orange, nav button .badge-onglet-orange{background:var(--orange); color:#fff;}
-  /* ---------- Contenu ---------- */
-  main{max-width:1180px; margin:0 auto; padding:22px 28px 60px;}
+  nav button.actif .badge-onglet-orange, nav button .badge-onglet-orange{background:var(--orange-500); color:#fff;}
+  .badge-anim{animation:pulser .3s ease;}
+  @keyframes pulser{50%{transform:scale(1.3);}}
+
+  /* ---------- Contenu / vues ---------- */
+  main{max-width:1200px; margin:0 auto; padding:24px 24px 64px;}
   .vue{display:none;}
-  .vue.active{display:block;}
-  .barre-outils{
-    display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:18px;
-  }
+  .vue.active{display:block; animation:fondu var(--transition);}
+  @keyframes fondu{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+  /* ---------- Barre d'outils, recherche, chips ---------- */
+  .barre-outils{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-bottom:16px;}
   .barre-outils input[type=search], .barre-outils select{
-    padding:8px 10px; border:1px solid var(--bord); border-radius:6px; font-size:14px;
-    background:#fff; font-family:inherit;
+    padding:8px 12px; border:var(--bordure); border-radius:var(--rayon-petit);
+    font-size:13.5px; background:var(--surface); font-family:inherit; color:var(--gris-900);
+    transition:border-color var(--transition);
   }
   .barre-outils input[type=search]{min-width:240px;}
+  .barre-outils input[type=search]:hover, .barre-outils select:hover{border-color:var(--bleu-500);}
   .espace{flex:1;}
+  .chips{display:flex; gap:6px; flex-wrap:wrap; align-items:center;}
+  .chip{
+    border:var(--bordure); background:var(--surface); border-radius:999px;
+    padding:5px 12px; font-size:12.5px; cursor:pointer; color:var(--gris-700);
+    font-family:inherit; transition:all var(--transition);
+  }
+  .chip:hover{border-color:var(--bleu-500); color:var(--bleu-600); background:var(--bleu-50);}
+  .chip-actif{background:var(--bleu-600); border-color:var(--bleu-600); color:#fff; font-weight:500;}
+  .visu-cache{display:none !important;}
+
+  /* ---------- Cartes et titres ---------- */
   .carte{
-    background:var(--carte); border:1px solid var(--bord); border-radius:10px;
-    padding:16px 18px; margin-bottom:16px;
+    background:var(--surface); border:var(--bordure); border-radius:var(--rayon);
+    padding:16px 24px; margin-bottom:16px;
   }
   .titre-bloc{
-    font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:.5px;
-    margin:0 0 10px; display:flex; align-items:center; gap:8px;
+    font-size:14px; font-weight:500; margin:0 0 8px;
+    display:flex; align-items:center; gap:8px; color:var(--gris-700);
   }
-  .compteur{font-weight:500; color:var(--texte-2); font-size:13px; text-transform:none; letter-spacing:0;}
-  .titre-retard{color:var(--rouge);}
-  .titre-jour{color:var(--bleu);}
-  .titre-semaine{color:var(--orange);}
-  .titre-plustard{color:var(--texte-2);}
-  .vide{color:var(--texte-2); font-size:13.5px; font-style:italic; padding:4px 0;}
-  /* ---------- Lignes d'échéance ---------- */
+  .titre-bloc::before{content:""; width:8px; height:8px; border-radius:50%; background:var(--gris-300);}
+  .titre-retard{color:var(--rouge);} .titre-retard::before{background:var(--rouge);}
+  .titre-jour{color:var(--orange);} .titre-jour::before{background:var(--orange-500);}
+  .titre-semaine{color:var(--bleu-700);} .titre-semaine::before{background:var(--bleu-500);}
+  .titre-plustard{color:var(--gris-500);} .titre-plustard::before{background:var(--gris-300);}
+  .compteur{font-weight:400; color:var(--gris-500); font-size:13px;}
+  .vide{color:var(--gris-500); font-size:13px; font-style:italic; padding:4px 0;}
+
+  /* ---------- États vides ---------- */
+  .etat-vide{
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+    padding:40px 16px; color:var(--gris-500); text-align:center;
+  }
+  .etat-vide svg{width:40px; height:40px; stroke:var(--gris-300);}
+  .etat-vide p{margin:0; font-size:14px;}
+
+  /* ---------- Accueil ---------- */
+  .grille-accueil{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px;}
+  .carte-accueil{
+    display:flex; flex-direction:column; gap:8px; align-items:flex-start;
+    background:var(--surface); border:var(--bordure); border-radius:var(--rayon);
+    padding:24px; cursor:pointer; text-align:left; font-family:inherit;
+    transition:border-color var(--transition), background var(--transition);
+  }
+  .carte-accueil:hover{border-color:var(--bleu-500); background:var(--bleu-50);}
+  .ca-titre{font-size:13px; color:var(--gris-500); font-weight:500;}
+  .ca-valeur{font-size:32px; font-weight:500; color:var(--bleu-700); line-height:1.1;}
+  .ca-sous{font-size:12.5px; color:var(--gris-500);}
+  .texte-rouge{color:var(--rouge);}
+  .texte-vert{color:var(--vert);}
+
+  /* ---------- Lignes d'échéance (liseré d'urgence à gauche) ---------- */
   .ligne-echeance{
-    display:flex; align-items:center; gap:12px; padding:9px 6px;
-    border-bottom:1px solid var(--gris-fond);
+    display:flex; align-items:center; gap:12px; padding:8px 8px 8px 12px;
+    border-bottom:.5px solid var(--gris-200); border-left:3px solid transparent;
+    transition:background var(--transition);
   }
+  .ligne-echeance:hover{background:var(--gris-50);}
   .ligne-echeance:last-child{border-bottom:none;}
-  .ligne-echeance input[type=checkbox]{width:18px; height:18px; cursor:pointer; flex-shrink:0;}
+  .u-retard{border-left-color:var(--rouge);}
+  .u-jour{border-left-color:var(--orange-500);}
+  .u-futur{border-left-color:var(--bleu-500);}
+  .ligne-echeance input[type=checkbox]{width:17px; height:17px; cursor:pointer; flex-shrink:0; accent-color:var(--bleu-600);}
   .ech-infos{flex:1; min-width:0;}
-  .ech-titre{font-weight:600; font-size:14.5px;}
-  .ech-dossier{font-size:13px; color:var(--texte-2); margin-top:1px;}
+  .ech-titre{font-weight:500; font-size:14px;}
+  .ech-dossier{font-size:12.5px; color:var(--gris-500); margin-top:1px;}
   .ech-droite{display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end;}
-  .ech-date{font-size:13.5px; color:var(--texte); min-width:88px; text-align:right;}
-  .ech-date small{display:block; color:var(--texte-2); font-size:11.5px;}
+  .ech-date{font-size:13px; color:var(--gris-900); min-width:88px; text-align:right;}
+  .ech-date small{display:block; color:var(--gris-500); font-size:11.5px;}
+
+  /* ---------- Pastilles ---------- */
   .badge{
-    display:inline-block; font-size:11.5px; font-weight:600; border-radius:5px;
-    padding:2px 8px; white-space:nowrap;
+    display:inline-block; font-size:11.5px; font-weight:500; border-radius:999px;
+    padding:2px 9px; white-space:nowrap;
   }
-  .badge-type{background:var(--bleu-clair); color:var(--bleu);}
-  .badge-haute{background:var(--rouge-fond); color:var(--rouge);}
-  .badge-moyenne{background:var(--orange-fond); color:var(--orange);}
-  .badge-basse{background:var(--gris-fond); color:var(--texte-2);}
-  .badge-statut{background:var(--gris-fond); color:var(--texte-2);}
-  .badge-vert{background:var(--vert-fond); color:var(--vert);}
-  /* ---------- Tableaux modules ---------- */
-  table{width:100%; border-collapse:collapse; font-size:14px;}
+  .badge-type{background:var(--bleu-100); color:var(--bleu-700);}
+  .badge-haute{background:var(--rouge-100); color:var(--rouge);}
+  .badge-moyenne{background:var(--orange-100); color:var(--orange);}
+  .badge-basse{background:var(--gris-200); color:var(--gris-500);}
+  .badge-statut{background:var(--gris-200); color:var(--gris-500);}
+  .badge-vert{background:var(--vert-100); color:var(--vert);}
+  .badge-dormant{background:var(--orange-100); border:.5px solid #ecd9b8; color:var(--orange);}
+
+  /* ---------- Tableaux ---------- */
+  table{width:100%; border-collapse:collapse; font-size:13.5px;}
   th{
-    text-align:left; font-size:12px; text-transform:uppercase; letter-spacing:.4px;
-    color:var(--texte-2); font-weight:600; padding:8px 10px; border-bottom:2px solid var(--bord);
+    text-align:left; font-size:12px; color:var(--gris-500); font-weight:500;
+    padding:8px 8px; border-bottom:.5px solid var(--gris-300);
   }
-  td{padding:9px 10px; border-bottom:1px solid var(--gris-fond); vertical-align:middle;}
+  td{padding:8px; border-bottom:.5px solid var(--gris-200); vertical-align:middle;}
   tr:last-child td{border-bottom:none;}
+  tbody tr{transition:background var(--transition);}
+  tbody tr:hover{background:var(--gris-50);}
+  tr.dormant td{background:var(--orange-100);}
   td select{
-    padding:5px 7px; border:1px solid var(--bord); border-radius:5px; font-size:13px;
-    background:#fff; font-family:inherit; cursor:pointer;
+    padding:4px 8px; border:var(--bordure); border-radius:var(--rayon-petit);
+    font-size:12.5px; background:var(--surface); font-family:inherit; cursor:pointer;
   }
+  .select-statut{border-radius:999px; font-weight:500; padding:4px 10px;}
+  .st-bleu{background:var(--bleu-100); color:var(--bleu-700); border-color:transparent;}
+  .st-orange{background:var(--orange-100); color:var(--orange); border-color:transparent;}
+  .st-vert{background:var(--vert-100); color:var(--vert); border-color:transparent;}
+  .st-gris{background:var(--gris-200); color:var(--gris-500); border-color:transparent;}
   .cell-actions{white-space:nowrap; text-align:right;}
-  .nom-loc{font-weight:600;}
-  .sous-info{font-size:12.5px; color:var(--texte-2);}
-  /* ---------- Formulaires / dialogues ---------- */
+  .nom-loc{font-weight:500;}
+  .sous-info{font-size:12px; color:var(--gris-500);}
+
+  /* ---------- Panneau latéral (drawer) ---------- */
   dialog{
-    border:none; border-radius:12px; padding:0; max-width:560px; width:92vw;
-    box-shadow:0 12px 40px rgba(0,0,0,.25);
+    position:fixed; inset:0 0 0 auto; height:100dvh; max-height:100dvh;
+    width:min(480px, 94vw); margin:0; border:none; border-left:var(--bordure);
+    border-radius:0; padding:0; background:var(--surface);
+    box-shadow:-8px 0 24px rgba(22, 39, 58, .10);
   }
-  dialog::backdrop{background:rgba(15,23,42,.45);}
+  dialog.dlg-large{width:min(760px, 96vw);}
+  dialog[open]{display:flex; flex-direction:column; animation:glisser var(--transition);}
+  @keyframes glisser{from{transform:translateX(32px); opacity:.5;} to{transform:none; opacity:1;}}
+  dialog::backdrop{background:rgba(22, 39, 58, .32);}
   .dlg-tete{
-    background:var(--bleu); color:#fff; padding:14px 22px; font-size:16px; font-weight:600;
-    border-radius:12px 12px 0 0;
+    background:var(--bleu-700); color:#fff; padding:16px 24px;
+    font-size:15px; font-weight:500; flex-shrink:0;
   }
-  .dlg-corps{padding:18px 22px;}
+  dialog form{flex:1; display:flex; flex-direction:column; overflow-y:auto; min-height:0;}
+  .dlg-corps{padding:16px 24px; flex:1;}
   .dlg-pied{
-    padding:14px 22px; border-top:1px solid var(--bord); display:flex;
-    justify-content:flex-end; gap:10px;
+    position:sticky; bottom:0; background:var(--surface); flex-shrink:0;
+    padding:12px 24px; border-top:var(--bordure); display:flex;
+    justify-content:flex-end; gap:8px;
   }
-  .champ{margin-bottom:13px;}
-  .champ label{display:block; font-size:13px; font-weight:600; margin-bottom:4px; color:var(--texte);}
+
+  /* ---------- Formulaires ---------- */
+  .champ{margin-bottom:16px;}
+  .champ label{display:block; font-size:12.5px; font-weight:500; margin-bottom:4px; color:var(--gris-700);}
   .champ input[type=text], .champ input[type=date], .champ input[type=number],
   .champ select, .champ textarea{
-    width:100%; padding:8px 10px; border:1px solid var(--bord); border-radius:6px;
-    font-size:14px; font-family:inherit; background:#fff;
+    width:100%; padding:8px 12px; border:var(--bordure); border-radius:var(--rayon-petit);
+    font-size:13.5px; font-family:inherit; background:var(--surface); color:var(--gris-900);
+    transition:border-color var(--transition);
   }
-  .champ .aide{font-size:12px; color:var(--texte-2); margin-top:3px;}
-  .deux-col{display:grid; grid-template-columns:1fr 1fr; gap:0 14px;}
-  .champ-coche{display:flex; align-items:center; gap:8px; margin-bottom:13px;}
-  .champ-coche input{width:17px; height:17px;}
-  .champ-coche label{font-size:14px; cursor:pointer;}
+  .champ input:hover, .champ select:hover, .champ textarea:hover{border-color:var(--bleu-500);}
+  .champ .aide{font-size:12px; color:var(--gris-500); margin-top:4px;}
+  .deux-col{display:grid; grid-template-columns:1fr 1fr; gap:0 16px;}
+  .champ-coche{display:flex; align-items:center; gap:8px; margin-bottom:16px;}
+  .champ-coche input{width:16px; height:16px; accent-color:var(--bleu-600);}
+  .champ-coche label{font-size:13.5px; cursor:pointer;}
+
   /* ---------- Stats ---------- */
   .grille-stats{display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px;}
-  .kpi-titre{font-size:15px; font-weight:600; margin:0 0 2px;}
-  .kpi-valeur{font-size:26px; font-weight:700; color:var(--bleu);}
-  .kpi-valeur small{font-size:14px; font-weight:500; color:var(--texte-2);}
-  .jauge{background:var(--gris-fond); border-radius:6px; height:10px; overflow:hidden; margin:8px 0 4px;}
-  .jauge > div{height:100%; background:var(--bleu-vif); border-radius:6px; transition:width .3s;}
+  .kpi-titre{font-size:14px; font-weight:500; margin:0 0 2px;}
+  .kpi-valeur{font-size:26px; font-weight:500; color:var(--bleu-700);}
+  .kpi-valeur small{font-size:13px; font-weight:400; color:var(--gris-500);}
+  .jauge{background:var(--gris-200); border-radius:999px; height:8px; overflow:hidden; margin:8px 0 4px;}
+  .jauge > div{height:100%; background:var(--bleu-500); border-radius:999px; transition:width .3s ease;}
   .jauge > div.atteint{background:var(--vert);}
-  .ligne-objectif{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--texte-2); margin-top:8px;}
+  .ligne-objectif{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--gris-500); margin-top:8px;}
   .ligne-objectif input{
-    width:90px; padding:4px 7px; border:1px solid var(--bord); border-radius:5px; font-size:13px;
+    width:90px; padding:4px 8px; border:var(--bordure); border-radius:var(--rayon-petit); font-size:12.5px; font-family:inherit;
   }
   .ligne-saisie{display:flex; align-items:center; gap:8px; margin-top:12px; flex-wrap:wrap;}
   .ligne-saisie input{
-    width:90px; padding:6px 8px; border:1px solid var(--bord); border-radius:5px; font-size:13.5px;
+    width:96px; padding:6px 8px; border:var(--bordure); border-radius:var(--rayon-petit); font-size:13px; font-family:inherit;
   }
   .chart{width:100%; height:auto; margin-top:12px; display:block;}
-  .chart .bar{fill:var(--bleu-vif); opacity:.85;}
-  .chart .bar-neg{fill:var(--rouge); opacity:.8;}
-  .chart-lbl{font-size:9px; fill:var(--texte-2); text-anchor:middle; font-family:inherit;}
-  .chart-val{font-size:9px; fill:var(--texte); text-anchor:middle; font-weight:600; font-family:inherit;}
-  .selecteur-periode{display:inline-flex; border:1px solid var(--bord); border-radius:7px; overflow:hidden; background:#fff;}
+  .chart .bar{fill:var(--bleu-500); opacity:.85;}
+  .chart .bar-neg{fill:var(--rouge); opacity:.75;}
+  .chart-lbl{font-size:9px; fill:var(--gris-500); text-anchor:middle; font-family:inherit;}
+  .chart-val{font-size:9px; fill:var(--gris-900); text-anchor:middle; font-weight:500; font-family:inherit;}
+  .selecteur-periode{display:inline-flex; border:var(--bordure); border-radius:var(--rayon-petit); overflow:hidden; background:var(--surface);}
   .selecteur-periode button{
-    border:none; background:none; padding:7px 16px; font-size:13.5px; cursor:pointer;
-    font-family:inherit; color:var(--texte-2);
+    border:none; background:none; padding:7px 16px; font-size:13px; cursor:pointer;
+    font-family:inherit; color:var(--gris-500); transition:background var(--transition), color var(--transition);
   }
-  .selecteur-periode button.actif{background:var(--bleu); color:#fff;}
-  /* ---------- Fiches, frise d'étapes, checklists, journal ---------- */
-  .dlg-large{max-width:820px;}
-  .section-fiche{border-top:1px solid var(--bord); margin-top:16px; padding-top:12px;}
-  .section-fiche h4{margin:0 0 8px; font-size:12.5px; text-transform:uppercase; letter-spacing:.5px; color:var(--texte-2);}
-  .section-fiche h4 .normal{text-transform:none; font-weight:400; letter-spacing:0;}
-  .frise{display:flex; gap:5px; flex-wrap:wrap;}
-  .etape-carte{flex:1; min-width:110px; border:1px solid var(--bord); border-radius:8px; padding:7px 8px; background:#fafbfc;}
-  .etape-carte.faite{border-color:#b5dcc6; background:var(--vert-fond);}
-  .etape-carte.courante{border-color:var(--bleu); background:var(--bleu-clair);}
-  .etape-tete{font-size:12.5px; font-weight:600; cursor:pointer; display:block; width:100%;
-    background:none; border:none; text-align:left; padding:0; font-family:inherit; color:var(--texte);}
-  .etape-carte.courante .etape-tete{color:var(--bleu);}
-  .etape-carte label{display:block; font-size:10.5px; color:var(--texte-2); margin-top:5px;}
-  .etape-carte input[type=date]{width:100%; font-size:11px; padding:2px 4px; border:1px solid var(--bord);
-    border-radius:4px; font-family:inherit; background:#fff;}
-  .ligne-checklist{display:flex; align-items:center; gap:8px; padding:3px 0; font-size:13.5px;}
-  .ligne-checklist input[type=checkbox]{width:16px; height:16px; cursor:pointer;}
-  .fait-texte{text-decoration:line-through; color:var(--texte-2);}
+  .selecteur-periode button:hover{color:var(--bleu-600);}
+  .selecteur-periode button.actif{background:var(--bleu-600); color:#fff; font-weight:500;}
+
+  /* ---------- Fiche sinistre : frise, checklist, journal ---------- */
+  .section-fiche{border-top:var(--bordure); margin-top:16px; padding-top:12px;}
+  .section-fiche h4{margin:0 0 8px; font-size:12.5px; font-weight:500; color:var(--gris-500);}
+  .section-fiche h4 .normal{font-weight:400;}
+  .frise{display:flex; gap:6px; flex-wrap:wrap;}
+  .etape-carte{
+    flex:1; min-width:108px; border:var(--bordure); border-radius:var(--rayon-petit);
+    padding:8px; background:var(--gris-50); transition:border-color var(--transition), background var(--transition);
+  }
+  .etape-carte.faite{border-color:#bedccb; background:var(--vert-100);}
+  .etape-carte.courante{border-color:var(--bleu-500); background:var(--bleu-50);}
+  .etape-tete{
+    font-size:12.5px; font-weight:500; cursor:pointer; display:block; width:100%;
+    background:none; border:none; text-align:left; padding:0; font-family:inherit; color:var(--gris-900);
+    transition:color var(--transition);
+  }
+  .etape-tete:hover{color:var(--bleu-600);}
+  .etape-carte.courante .etape-tete{color:var(--bleu-700);}
+  .etape-carte label{display:block; font-size:10.5px; color:var(--gris-500); margin-top:4px;}
+  .etape-carte input[type=date]{
+    width:100%; font-size:11px; padding:2px 4px; border:var(--bordure);
+    border-radius:4px; font-family:inherit; background:var(--surface);
+  }
+  .ligne-checklist{display:flex; align-items:center; gap:8px; padding:3px 0; font-size:13px;}
+  .ligne-checklist input[type=checkbox]{width:15px; height:15px; cursor:pointer; accent-color:var(--bleu-600);}
+  .fait-texte{text-decoration:line-through; color:var(--gris-500);}
   .ajout-inline{display:flex; gap:8px; margin-top:8px;}
-  .ajout-inline input[type=text]{flex:1; padding:6px 9px; border:1px solid var(--bord); border-radius:6px;
-    font-size:13.5px; font-family:inherit;}
-  .journal-entree{border-left:3px solid var(--bleu-clair); padding:3px 10px; margin-bottom:8px;}
-  .journal-date{font-size:11.5px; color:var(--texte-2);}
-  .journal-texte{font-size:13.5px; white-space:pre-wrap;}
-  tr.dormant td{background:var(--ambre-fond);}
-  .badge-dormant{background:var(--ambre-fond); border:1px solid var(--ambre-bord); color:var(--ambre-texte);}
-  .mini-frise{display:flex; gap:2px; margin-top:4px;}
-  .mini-frise span{width:13px; height:5px; border-radius:2px; background:var(--gris-fond);}
-  .mini-frise span.ok{background:var(--bleu-vif);}
-  /* ---------- Divers ---------- */
-  #zone-toasts{position:fixed; bottom:20px; right:20px; display:flex; flex-direction:column; gap:8px; z-index:100;}
-  .toast{
-    background:#1f2937; color:#fff; padding:10px 16px; border-radius:8px; font-size:13.5px;
-    box-shadow:0 4px 14px rgba(0,0,0,.3); animation:apparait .2s ease-out;
+  .ajout-inline input[type=text]{
+    flex:1; padding:6px 10px; border:var(--bordure); border-radius:var(--rayon-petit);
+    font-size:13px; font-family:inherit;
   }
+  .journal-entree{border-left:2px solid var(--bleu-200); padding:3px 12px; margin-bottom:8px;}
+  .journal-date{font-size:11.5px; color:var(--gris-500);}
+  .journal-texte{font-size:13px; white-space:pre-wrap;}
+  .mini-frise{display:flex; gap:2px; margin-top:4px;}
+  .mini-frise span{width:13px; height:4px; border-radius:2px; background:var(--gris-200);}
+  .mini-frise span.ok{background:var(--bleu-500);}
+
+  /* ---------- Toasts ---------- */
+  #zone-toasts{position:fixed; bottom:24px; right:24px; display:flex; flex-direction:column; gap:8px; z-index:100;}
+  .toast{
+    display:flex; align-items:center; gap:16px;
+    background:var(--gris-900); color:#fff; padding:10px 16px; border-radius:var(--rayon-petit);
+    font-size:13px; box-shadow:0 4px 16px rgba(22,39,58,.25); animation:apparait var(--transition);
+    max-width:380px;
+  }
+  .toast-annuler{
+    background:none; border:none; color:var(--bleu-200); font-weight:500;
+    cursor:pointer; font-family:inherit; font-size:13px; padding:0; text-decoration:underline;
+  }
+  .toast-annuler:hover{color:#fff;}
   @keyframes apparait{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
-  .lien-archives{background:none; border:none; color:var(--bleu); cursor:pointer; font-size:13.5px; text-decoration:underline; font-family:inherit;}
-  .note-bas{font-size:12.5px; color:var(--texte-2); margin-top:10px;}
+
+  /* ---------- Divers ---------- */
+  .lien-archives{
+    background:none; border:none; color:var(--bleu-600); cursor:pointer;
+    font-size:13px; text-decoration:underline; font-family:inherit;
+  }
+  .lien-archives:hover{color:var(--bleu-700);}
+  .note-bas{font-size:12px; color:var(--gris-500); margin-top:8px;}
 </style>
 </head>
 <body>
@@ -234,40 +349,47 @@
     <div class="sous-titre">Vos échéances et dossiers, en un coup d'œil. Données conservées uniquement sur ce poste.</div>
   </div>
   <div class="actions-haut">
-    <button class="btn btn-blanc" id="btn-exporter">⬇ Exporter la sauvegarde</button>
-    <button class="btn btn-blanc" id="btn-importer">⬆ Importer une sauvegarde</button>
+    <button class="btn btn-blanc" id="btn-exporter"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M4 20h16"/></svg>Exporter la sauvegarde</button>
+    <button class="btn btn-blanc" id="btn-importer"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><path d="M12 16V4"/><path d="m7 9 5-5 5 5"/><path d="M4 20h16"/></svg>Importer une sauvegarde</button>
     <input type="file" id="fichier-import" accept=".json,application/json" style="display:none">
   </div>
 </header>
 
 <div id="bandeau-sauvegarde">
-  <span id="texte-bandeau">💾 Pensez à sauvegarder vos données : aucune exportation récente.</span>
+  <span id="texte-bandeau">Pensez à sauvegarder vos données : aucune exportation récente.</span>
   <button class="btn btn-petit" id="btn-export-bandeau">Exporter maintenant</button>
 </div>
 
 <nav>
-  <button data-vue="echeancier" class="actif">📋 Échéancier
+  <button data-vue="accueil" class="actif"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>Accueil</button>
+  <button data-vue="echeancier"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m8.5 12 2.5 2.5 5-5.5"/></svg>Échéancier
     <span class="badge-onglet" id="badge-echeancier" style="display:none" title="Échéances actives à traiter">0</span>
     <span class="badge-onglet badge-onglet-rouge" id="badge-retard" style="display:none" title="Échéances en retard">0</span></button>
-  <button data-vue="conges">📨 Congés locataires <span class="badge-onglet" id="badge-conges" style="display:none" title="Dossiers non clôturés">0</span></button>
-  <button data-vue="arretes">💶 Arrêtés de compte <span class="badge-onglet" id="badge-arretes" style="display:none" title="Dépôts non restitués">0</span></button>
-  <button data-vue="fins">📁 Fin de gestion <span class="badge-onglet" id="badge-fins" style="display:none" title="Dossiers non soldés">0</span></button>
-  <button data-vue="sinistres">🛠 Sinistres <span class="badge-onglet" id="badge-sinistres" style="display:none" title="Sinistres non clôturés">0</span></button>
-  <button data-vue="devis">🧾 Devis <span class="badge-onglet" id="badge-devis" style="display:none" title="Devis en attente de réponse">0</span></button>
-  <button data-vue="saisies">📝 À saisir <span class="badge-onglet" id="badge-saisies" style="display:none" title="Éléments restant à saisir">0</span></button>
-  <button data-vue="stats">📊 Mes stats</button>
+  <button data-vue="conges"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7.5 9 6 9-6"/></svg>Congés locataires <span class="badge-onglet" id="badge-conges" style="display:none" title="Dossiers non clôturés">0</span></button>
+  <button data-vue="arretes"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/></svg>Arrêtés de compte <span class="badge-onglet" id="badge-arretes" style="display:none" title="Dépôts non restitués">0</span></button>
+  <button data-vue="fins"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M3.5 7a2 2 0 0 1 2-2h4l2 2.5h7a2 2 0 0 1 2 2V17a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z"/></svg>Fin de gestion <span class="badge-onglet" id="badge-fins" style="display:none" title="Dossiers non soldés">0</span></button>
+  <button data-vue="sinistres"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M13 2 4.5 13.5H11L9.5 22 19 10h-6.5z"/></svg>Sinistres <span class="badge-onglet" id="badge-sinistres" style="display:none" title="Sinistres non clôturés">0</span></button>
+  <button data-vue="devis"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M7 2.5h7L19 7v14.5H7z"/><path d="M14 2.5V7h5"/><path d="M9.5 12h6M9.5 16h6"/></svg>Devis <span class="badge-onglet" id="badge-devis" style="display:none" title="Devis en attente de réponse">0</span></button>
+  <button data-vue="saisies"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7.5 18.5 3 20l1.5-4.5z"/></svg>À saisir <span class="badge-onglet" id="badge-saisies" style="display:none" title="Éléments restant à saisir">0</span></button>
+  <button data-vue="stats"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" aria-hidden="true"><path d="M5 20v-9M12 20V4M19 20v-6"/></svg>Mes stats</button>
 </nav>
 
 <main>
 
+  <!-- ============ VUE ACCUEIL ============ -->
+  <section class="vue active" id="vue-accueil">
+    <div class="grille-accueil" id="grille-accueil"></div>
+    <p class="note-bas">Cliquez sur une carte pour ouvrir l'onglet correspondant, déjà filtré. Raccourcis clavier : N = nouveau, / = rechercher, Échap = fermer le panneau.</p>
+  </section>
+
   <!-- ============ VUE ÉCHÉANCIER ============ -->
-  <section class="vue active" id="vue-echeancier">
+  <section class="vue" id="vue-echeancier">
     <div class="barre-outils">
       <input type="search" id="recherche-ech" placeholder="Rechercher (intitulé, locataire, adresse)…">
       <select id="filtre-type-ech">
         <option value="">Tous les types</option>
       </select>
-      <select id="filtre-priorite-ech">
+      <select id="filtre-priorite-ech" class="filtre-chips">
         <option value="">Toutes les priorités</option>
         <option value="haute">Priorité haute</option>
         <option value="moyenne">Priorité moyenne</option>
@@ -282,7 +404,7 @@
 
     <div id="bloc-archives" style="display:none">
       <div class="carte">
-        <h2 class="titre-bloc">🗄 Échéances archivées <span class="compteur" id="cpt-archives"></span></h2>
+        <h2 class="titre-bloc">Échéances archivées <span class="compteur" id="cpt-archives"></span></h2>
         <div id="liste-archives"></div>
       </div>
     </div>
@@ -292,7 +414,7 @@
   <section class="vue" id="vue-conges">
     <div class="barre-outils">
       <input type="search" id="recherche-conge" placeholder="Rechercher un locataire ou une adresse…">
-      <select id="filtre-statut-conge">
+      <select id="filtre-statut-conge" class="filtre-chips">
         <option value="">Tous les statuts</option>
         <option value="recu">Reçu</option>
         <option value="edl_planifie">EDL de sortie planifié</option>
@@ -312,7 +434,7 @@
   <section class="vue" id="vue-arretes">
     <div class="barre-outils">
       <input type="search" id="recherche-arrete" placeholder="Rechercher un locataire ou une adresse…">
-      <select id="filtre-statut-arrete">
+      <select id="filtre-statut-arrete" class="filtre-chips">
         <option value="">Tous les statuts</option>
         <option value="a_traiter">À traiter</option>
         <option value="en_cours">En cours</option>
@@ -331,7 +453,7 @@
   <section class="vue" id="vue-fins">
     <div class="barre-outils">
       <input type="search" id="recherche-fin" placeholder="Rechercher un propriétaire ou une adresse…">
-      <select id="filtre-statut-fin">
+      <select id="filtre-statut-fin" class="filtre-chips">
         <option value="">Tous les statuts</option>
         <option value="a_traiter">À traiter</option>
         <option value="en_cours">En cours</option>
@@ -350,8 +472,9 @@
   <section class="vue" id="vue-sinistres">
     <div class="barre-outils">
       <input type="search" id="recherche-sinistre" placeholder="Rechercher (référence, adresse, locataire, assureur)…">
-      <select id="filtre-etape-sinistre">
+      <select id="filtre-etape-sinistre" class="filtre-chips">
         <option value="">Toutes les étapes</option>
+        <option value="encours">En cours</option>
         <option value="declare">Déclaré</option>
         <option value="expertise">Expertise</option>
         <option value="devis">Devis</option>
@@ -369,9 +492,9 @@
       <select id="filtre-assurance-sinistre">
         <option value="">Toutes les compagnies</option>
       </select>
-      <label style="font-size:13px; color:var(--texte-2); display:flex; align-items:center; gap:5px;">Dormant après
+      <label style="font-size:12.5px; color:var(--gris-500); display:flex; align-items:center; gap:5px;">Dormant après
         <input type="number" id="seuil-dormance" min="1" step="1" value="14"
-          style="width:58px; padding:6px 7px; border:1px solid var(--bord); border-radius:6px; font-family:inherit;"> j
+          style="width:58px; padding:6px 8px; border:.5px solid var(--gris-300); border-radius:7px; font-family:inherit;"> j
       </label>
       <div class="espace"></div>
       <button class="btn" id="btn-nouveau-sinistre">＋ Nouveau sinistre</button>
@@ -386,8 +509,9 @@
   <section class="vue" id="vue-devis">
     <div class="barre-outils">
       <input type="search" id="recherche-devis" placeholder="Rechercher (objet, entreprise, propriétaire, adresse)…">
-      <select id="filtre-statut-devis">
+      <select id="filtre-statut-devis" class="filtre-chips">
         <option value="">Tous les statuts</option>
+        <option value="attente">À relancer</option>
         <option value="demande">Demandé</option>
         <option value="recu">Reçu</option>
         <option value="propose">Proposé au propriétaire</option>
@@ -413,7 +537,7 @@
         <option value="avenant">Avenant</option>
         <option value="bail">Bail</option>
       </select>
-      <select id="filtre-statut-saisie">
+      <select id="filtre-statut-saisie" class="filtre-chips">
         <option value="">Tous les statuts</option>
         <option value="a_saisir">À saisir</option>
         <option value="saisi">Saisi</option>
@@ -430,13 +554,13 @@
   <!-- ============ VUE STATS ============ -->
   <section class="vue" id="vue-stats">
     <div class="barre-outils">
-      <span style="font-size:14px; color:var(--texte-2)">Période :</span>
+      <span style="font-size:13.5px; color:var(--gris-500)">Période :</span>
       <div class="selecteur-periode" id="selecteur-periode">
         <button data-gran="mois" class="actif">Mois</button>
         <button data-gran="trimestre">Trimestre</button>
         <button data-gran="annee">Année</button>
       </div>
-      <span id="libelle-periode" style="font-size:14px; font-weight:600; color:var(--bleu)"></span>
+      <span id="libelle-periode" style="font-size:13.5px; font-weight:500; color:var(--bleu-700)"></span>
     </div>
     <div class="grille-stats" id="grille-stats"></div>
     <p class="note-bas">Chaque saisie est datée du jour : les totaux et l'historique se recalculent automatiquement selon la période choisie. Les objectifs sont propres à chaque période (mois, trimestre, année).</p>
@@ -1280,6 +1404,24 @@ async function supprimerEcheancesLiees(sourceId){
 const LIBELLE_STATUT_CONGE = {recu:'Reçu', edl_planifie:'EDL de sortie planifié', parti:'Locataire parti', cloture:'Clôturé'};
 const LIBELLE_STATUT_ARRETE = {a_traiter:'À traiter', en_cours:'En cours', restitue:'Restitué'};
 
+/* Couleur des pastilles de statut, identique dans tous les onglets :
+   bleu = à traiter, orange = en cours / à relancer, vert = terminé */
+const CLASSE_STATUT = {
+  recu:'st-bleu', edl_planifie:'st-orange', parti:'st-orange', cloture:'st-vert',
+  a_traiter:'st-bleu', en_cours:'st-orange', restitue:'st-vert', solde:'st-vert',
+  demande:'st-bleu', propose:'st-orange', accepte:'st-vert', refuse:'st-gris',
+  a_saisir:'st-bleu', saisi:'st-vert'
+};
+function classeStatut(s){ return 'select-statut ' + (CLASSE_STATUT[s] || 'st-gris'); }
+
+const ICONE_VIDE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13.5 7 5h10l4 8.5V19a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 19z"/><path d="M3 13.5h5.5l1.5 2.5h4l1.5-2.5H21"/></svg>';
+function etatVide(message, idBouton, texteBouton){
+  return '<div class="etat-vide">' + ICONE_VIDE + '<p>' + message + '</p>' +
+    (idBouton ? '<button type="button" class="btn btn-secondaire" data-ouvre="' + idBouton + '">' +
+      texteBouton + '</button>' : '') +
+    '</div>';
+}
+
 function ligneEcheanceHTML(e, archivee){
   const prio = prioriteEcheance(e);
   const d = diffJours(e.dateEcheance);
@@ -1298,7 +1440,8 @@ function ligneEcheanceHTML(e, archivee){
       '<span class="ech-date">' + fmtDate(e.dateEcheance) + '<small>' + relatif + '</small></span>' +
       (e.sourceType ? '' : '<button class="btn btn-secondaire btn-petit" data-modif-ech="' + e.id + '">Modifier</button>') +
       '<button class="btn btn-danger btn-petit" data-suppr-ech="' + e.id + '" title="Supprimer">✕</button>';
-  return '<div class="ligne-echeance">' +
+  const urgence = archivee ? '' : d < 0 ? ' u-retard' : d === 0 ? ' u-jour' : ' u-futur';
+  return '<div class="ligne-echeance' + urgence + '">' +
     (archivee ? '' : '<input type="checkbox" data-fait="' + e.id + '" title="Marquer comme fait (archive l\'échéance)">') +
     '<div class="ech-infos"><div class="ech-titre">' + echap(e.titre) + '</div>' +
     (e.dossier ? '<div class="ech-dossier">' + echap(e.dossier) + '</div>' : '') +
@@ -1334,10 +1477,10 @@ function rendreEcheancier(){
                   : '<div class="vide">' + msgVide + '</div>') + '</div>';
 
   document.getElementById('liste-echeances').innerHTML =
-    bloc('titre-retard', '⚠ En retard', groupes.retard, 'Rien en retard. Parfait.') +
-    bloc('titre-jour', "📌 Aujourd'hui", groupes.jour, "Rien à faire impérativement aujourd'hui.") +
-    bloc('titre-semaine', '🗓 7 prochains jours', groupes.semaine, 'Aucune échéance cette semaine.') +
-    bloc('titre-plustard', '⏳ Plus tard', groupes.plustard, 'Aucune échéance plus lointaine.');
+    bloc('titre-retard', 'En retard', groupes.retard, 'Rien en retard. Parfait.') +
+    bloc('titre-jour', "Aujourd'hui", groupes.jour, "Rien à faire impérativement aujourd'hui.") +
+    bloc('titre-semaine', '7 prochains jours', groupes.semaine, 'Aucune échéance cette semaine.') +
+    bloc('titre-plustard', 'Plus tard', groupes.plustard, 'Aucune échéance plus lointaine.');
 
   /* Archives */
   const archives = etat.echeances.filter(e => e.statut === 'archivee' && correspond(e))
@@ -1369,7 +1512,7 @@ function rendreConges(){
 
   if (!liste.length){
     document.getElementById('liste-conges').innerHTML =
-      '<div class="vide">Aucun congé enregistré. Cliquez sur « ＋ Nouveau congé » pour commencer.</div>';
+      etatVide('Aucun congé locataire en cours.', 'btn-nouveau-conge', '＋ Nouveau congé');
     return;
   }
   const lignes = liste.map(c => {
@@ -1385,7 +1528,7 @@ function rendreConges(){
         '<div class="sous-info">Zone tendue : ' + (c.zoneTendue ? 'oui' : 'non') + '</div></td>' +
       '<td>' + fmtDate(c.dateReception) + '<div class="sous-info">préavis ' + c.dureePreavisMois + ' mois</div></td>' +
       '<td><strong>' + fmtDate(c.dateFinPreavis) + '</strong>' + finBadge + '</td>' +
-      '<td><select data-statut-conge="' + c.id + '">' + options + '</select></td>' +
+      '<td><select class="' + classeStatut(c.statut) + '" data-statut-conge="' + c.id + '">' + options + '</select></td>' +
       '<td class="cell-actions">' +
         '<button class="btn btn-secondaire btn-petit" data-modif-conge="' + c.id + '">Modifier</button> ' +
         '<button class="btn btn-danger btn-petit" data-suppr-conge="' + c.id + '">Supprimer</button></td>' +
@@ -1407,7 +1550,7 @@ function rendreArretes(){
 
   if (!liste.length){
     document.getElementById('liste-arretes').innerHTML =
-      '<div class="vide">Aucun arrêté de compte. Cliquez sur « ＋ Nouvel arrêté de compte » pour commencer.</div>';
+      etatVide('Aucun arrêté de compte en cours.', 'btn-nouvel-arrete', '＋ Nouvel arrêté de compte');
     return;
   }
   const lignes = liste.map(a => {
@@ -1429,7 +1572,7 @@ function rendreArretes(){
       '<td>' + fmtEuros(a.montantDepot) + '</td>' +
       '<td>' + retenues + '</td>' +
       '<td><strong>' + fmtDate(a.dateLimite) + '</strong>' + limBadge + '</td>' +
-      '<td><select data-statut-arrete="' + a.id + '">' + options + '</select>' + restitue + '</td>' +
+      '<td><select class="' + classeStatut(a.statut) + '" data-statut-arrete="' + a.id + '">' + options + '</select>' + restitue + '</td>' +
       '<td class="cell-actions">' +
         '<button class="btn btn-secondaire btn-petit" data-modif-arrete="' + a.id + '">Modifier</button> ' +
         '<button class="btn btn-danger btn-petit" data-suppr-arrete="' + a.id + '">Supprimer</button></td>' +
@@ -1452,7 +1595,7 @@ function rendreFins(){
 
   if (!liste.length){
     document.getElementById('liste-fins').innerHTML =
-      '<div class="vide">Aucune fin de gestion enregistrée. Cliquez sur « ＋ Nouvelle fin de gestion » pour commencer.</div>';
+      etatVide('Aucune fin de gestion en cours.', 'btn-nouvelle-fin', '＋ Nouvelle fin de gestion');
     return;
   }
   const lignes = liste.map(f => {
@@ -1473,7 +1616,7 @@ function rendreFins(){
       '<td><strong>' + fmtDate(f.dateEffet) + '</strong>' + badge + '</td>' +
       '<td>' + (f.locataireEnPlace ? 'Oui' : 'Non') + '</td>' +
       '<td>' + checklist + '</td>' +
-      '<td><select data-statut-fin="' + f.id + '">' + options + '</select></td>' +
+      '<td><select class="' + classeStatut(f.statut) + '" data-statut-fin="' + f.id + '">' + options + '</select></td>' +
       '<td class="cell-actions">' +
         '<button class="btn btn-secondaire btn-petit" data-modif-fin="' + f.id + '">Modifier</button> ' +
         '<button class="btn btn-danger btn-petit" data-suppr-fin="' + f.id + '">Supprimer</button></td>' +
@@ -1495,7 +1638,8 @@ function rendreSinistres(){
   const liste = etat.sinistres.filter(s => {
     if (recherche && !((s.reference + ' ' + s.adresse + ' ' + (s.locataire || '') + ' ' +
         (s.proprietaire || '') + ' ' + (s.assurance || '')).toLowerCase().includes(recherche))) return false;
-    if (fEtape && s.etape !== fEtape) return false;
+    if (fEtape === 'encours'){ if (s.etape === 'cloture') return false; }
+    else if (fEtape && s.etape !== fEtape) return false;
     if (fAttente){
       const et = (s.etapes || {})[fAttente];
       if (s.etape !== fAttente || (et && et.realisee)) return false;
@@ -1517,7 +1661,7 @@ function rendreSinistres(){
 
   if (!liste.length){
     document.getElementById('liste-sinistres').innerHTML =
-      '<div class="vide">Aucun sinistre ne correspond. Cliquez sur « ＋ Nouveau sinistre » pour créer un dossier.</div>';
+      etatVide('Aucun sinistre en cours.', 'btn-nouveau-sinistre', '＋ Nouveau sinistre');
     return;
   }
   const lignes = liste.map(s => {
@@ -1539,7 +1683,7 @@ function rendreSinistres(){
       relance = '<span class="badge badge-moyenne">⚠ pas de relance planifiée</span>';
     }
     const badgeDormant = dormant
-      ? '<div><span class="badge badge-dormant">💤 ' + joursSansAction(s) + ' j sans action</span></div>' : '';
+      ? '<div><span class="badge badge-dormant">' + joursSansAction(s) + ' j sans action</span></div>' : '';
     return '<tr' + (dormant ? ' class="dormant"' : '') + '>' +
       '<td><div class="nom-loc">' + echap(s.reference) + '</div><div class="sous-info">' + echap(s.type) + '</div>' + badgeDormant + '</td>' +
       '<td>' + echap(s.adresse) +
@@ -1568,12 +1712,14 @@ function rendreDevis(){
   const liste = etat.devis
     .filter(d => (!recherche || (d.objet + ' ' + d.entreprise + ' ' + (d.proprietaire || '') + ' ' +
                   (d.adresse || '')).toLowerCase().includes(recherche)) &&
-                 (!fStatut || d.statut === fStatut))
+                 (!fStatut || (fStatut === 'attente'
+                   ? (d.statut === 'demande' || d.statut === 'propose')
+                   : d.statut === fStatut)))
     .sort((a, b) => (b.dateDemande || '').localeCompare(a.dateDemande || ''));
 
   if (!liste.length){
     document.getElementById('liste-devis').innerHTML =
-      '<div class="vide">Aucun devis enregistré. Cliquez sur « ＋ Nouveau devis » pour commencer.</div>';
+      etatVide('Aucun devis en attente.', 'btn-nouveau-devis', '＋ Nouveau devis');
     return;
   }
   const lignes = liste.map(d => {
@@ -1590,7 +1736,7 @@ function rendreDevis(){
       '<td>' + fmtDate(d.dateDemande) + '</td>' +
       '<td>' + (d.montant ? fmtEuros(d.montant) : '—') + '</td>' +
       '<td>' + (sinistre ? '<span class="badge badge-type">' + echap(sinistre.reference) + '</span>' : '—') + '</td>' +
-      '<td><select data-statut-devis="' + d.id + '">' + options + '</select>' + proposition + '</td>' +
+      '<td><select class="' + classeStatut(d.statut) + '" data-statut-devis="' + d.id + '">' + options + '</select>' + proposition + '</td>' +
       '<td class="cell-actions">' +
         '<button class="btn btn-secondaire btn-petit" data-modif-devis="' + d.id + '">Modifier</button> ' +
         '<button class="btn btn-danger btn-petit" data-suppr-devis="' + d.id + '">Supprimer</button></td>' +
@@ -1620,7 +1766,7 @@ function rendreSaisies(){
 
   if (!liste.length){
     document.getElementById('liste-saisies').innerHTML =
-      '<div class="vide">Rien à saisir. Cliquez sur « ＋ Nouvelle entrée » pour ajouter un mandat, un avenant ou un bail.</div>';
+      etatVide('Rien à saisir pour le moment.', 'btn-nouvelle-saisie', '＋ Nouvelle entrée');
     return;
   }
   const lignes = liste.map(s => {
@@ -1640,7 +1786,7 @@ function rendreSaisies(){
       '<td>' + fmtDate(s.dateReception) + '</td>' +
       '<td><strong>' + fmtDate(s.dateEffet) + '</strong></td>' +
       '<td>' + rentre + '</td>' +
-      '<td><select data-statut-saisie="' + s.id + '">' + options + '</select></td>' +
+      '<td><select class="' + classeStatut(s.statut) + '" data-statut-saisie="' + s.id + '">' + options + '</select></td>' +
       '<td class="cell-actions">' +
         '<button class="btn btn-secondaire btn-petit" data-modif-saisie="' + s.id + '">Modifier</button> ' +
         '<button class="btn btn-danger btn-petit" data-suppr-saisie="' + s.id + '">Supprimer</button></td>' +
@@ -1816,23 +1962,58 @@ function rendreBandeau(){
   let visible = false, texte = '';
   if (!dernier){
     visible = true;
-    texte = '💾 Vos données n\'ont encore jamais été sauvegardées. Pensez à exporter régulièrement.';
+    texte = 'Vos données n\'ont encore jamais été sauvegardées. Pensez à exporter régulièrement.';
   } else {
     const jours = Math.floor((Date.now() - new Date(dernier).getTime()) / 86400000);
     if (jours >= 7){
       visible = true;
-      texte = '💾 Dernière sauvegarde il y a ' + jours + ' jours. Pensez à exporter vos données.';
+      texte = 'Dernière sauvegarde il y a ' + jours + ' jours. Pensez à exporter vos données.';
     }
   }
   document.getElementById('texte-bandeau').textContent = texte;
   bandeau.classList.toggle('visible', visible);
 }
 
+/* ---------------- Accueil : cartes de synthèse cliquables ---------------- */
+function rendreAccueil(){
+  const actives = etat.echeances.filter(e => e.statut === 'active');
+  const retard = actives.filter(e => diffJours(e.dateEcheance) < 0).length;
+  const jour = actives.filter(e => diffJours(e.dateEcheance) === 0).length;
+  const sinistres = etat.sinistres.filter(s => s.etape !== 'cloture').length;
+  const devisR = etat.devis.filter(d => d.statut === 'demande' || d.statut === 'propose').length;
+  const bornes = bornesPeriode('mois', 0);
+  const mandats = mandatsEntres(bornes[0], bornes[1]);
+  const pertes = pertesGestion(bornes[0], bornes[1]);
+  const net = mandats - pertes;
+  const carte = (vue, titre, valeur, sous, classeValeur) =>
+    '<button type="button" class="carte-accueil" data-aller="' + vue + '">' +
+    '<span class="ca-titre">' + titre + '</span>' +
+    '<span class="ca-valeur' + (classeValeur ? ' ' + classeValeur : '') + '">' + valeur + '</span>' +
+    '<span class="ca-sous">' + sous + '</span></button>';
+  document.getElementById('grille-accueil').innerHTML =
+    carte('echeancier', "Échéances à traiter aujourd'hui", retard + jour,
+      retard ? '<span class="texte-rouge">dont ' + retard + ' en retard</span>' : 'rien en retard',
+      retard ? 'texte-rouge' : '') +
+    carte('sinistres', 'Sinistres en attente', sinistres,
+      sinistres ? 'dossiers non clôturés' : 'aucun dossier ouvert') +
+    carte('devis', 'Devis à relancer', devisR,
+      devisR ? 'demandés ou proposés, sans réponse' : 'tout est à jour') +
+    carte('stats', 'Attrition du mois', (net > 0 ? '+' : '') + net,
+      mandats + ' mandat(s) entré(s) · ' + pertes + ' perte(s) de gestion',
+      net < 0 ? 'texte-rouge' : net > 0 ? 'texte-vert' : '');
+}
+
 /* ---------------- Badges des onglets ---------------- */
 function majBadge(id, n){
   const el = document.getElementById(id);
+  const avant = el.style.display === 'none' ? null : el.textContent;
   el.style.display = n ? '' : 'none';
   el.textContent = n;
+  if (n && avant !== null && avant !== String(n)){
+    el.classList.remove('badge-anim');
+    void el.offsetWidth;
+    el.classList.add('badge-anim');
+  }
   return el;
 }
 /* Compteurs « en cours » de chaque onglet, recalculés après toute modification */
@@ -1858,6 +2039,7 @@ function rendreBadgesNav(){
 
 /* ---------------- Rendu global ---------------- */
 function rendreTout(){
+  rendreAccueil();
   rendreEcheancier();
   rendreConges();
   rendreArretes();
@@ -2455,8 +2637,111 @@ async function validerSaisie(){
   rendreTout();
 }
 
+/* ---------------- Chips de filtres ----------------
+   Chaque <select class="filtre-chips"> est masqué et piloté par une rangée
+   de pastilles cliquables ; la logique de filtrage existante est inchangée. */
+function initChips(){
+  document.querySelectorAll('select.filtre-chips').forEach(sel => {
+    const groupe = document.createElement('div');
+    groupe.className = 'chips';
+    sel.insertAdjacentElement('afterend', groupe);
+    const construire = () => {
+      groupe.innerHTML = [...sel.options].map(o =>
+        '<button type="button" class="chip' + (o.value === sel.value ? ' chip-actif' : '') +
+        '" data-val="' + echap(o.value) + '">' +
+        (o.value === '' ? 'Tous' : echap(o.textContent)) + '</button>').join('');
+    };
+    groupe.addEventListener('click', (e) => {
+      if (e.target.dataset.val == null) return;
+      sel.value = e.target.dataset.val;
+      sel.dispatchEvent(new Event('input'));
+    });
+    sel.addEventListener('input', construire);
+    new MutationObserver(construire).observe(sel, {childList: true});
+    sel.classList.add('visu-cache');
+    construire();
+  });
+}
+
+/* ---------------- Navigation programmée et raccourcis clavier ---------------- */
+function allerVue(vue){
+  const b = document.querySelector('nav button[data-vue="' + vue + '"]');
+  if (b) b.click();
+}
+const RACCOURCIS = {
+  echeancier:{recherche:'recherche-ech', nouveau:'btn-nouvelle-echeance'},
+  conges:{recherche:'recherche-conge', nouveau:'btn-nouveau-conge'},
+  arretes:{recherche:'recherche-arrete', nouveau:'btn-nouvel-arrete'},
+  fins:{recherche:'recherche-fin', nouveau:'btn-nouvelle-fin'},
+  sinistres:{recherche:'recherche-sinistre', nouveau:'btn-nouveau-sinistre'},
+  devis:{recherche:'recherche-devis', nouveau:'btn-nouveau-devis'},
+  saisies:{recherche:'recherche-saisie', nouveau:'btn-nouvelle-saisie'}
+};
+function initRaccourcis(){
+  document.addEventListener('keydown', (e) => {
+    const c = e.target;
+    if (c && (c.tagName === 'INPUT' || c.tagName === 'TEXTAREA' || c.tagName === 'SELECT' || c.isContentEditable)) return;
+    if (document.querySelector('dialog[open]')) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    const actif = document.querySelector('nav button.actif');
+    const cfg = RACCOURCIS[actif ? actif.dataset.vue : ''] || {};
+    if (e.key === '/' && cfg.recherche){
+      e.preventDefault();
+      document.getElementById(cfg.recherche).focus();
+    } else if ((e.key === 'n' || e.key === 'N') && cfg.nouveau){
+      e.preventDefault();
+      document.getElementById(cfg.nouveau).click();
+    }
+  });
+}
+
+/* ---------------- Toast avec bouton Annuler (suppressions) ---------------- */
+function toastAnnulable(msg, surAnnuler){
+  const z = document.getElementById('zone-toasts');
+  const t = document.createElement('div');
+  t.className = 'toast';
+  const texte = document.createElement('span');
+  texte.textContent = msg;
+  const btn = document.createElement('button');
+  btn.className = 'toast-annuler';
+  btn.textContent = 'Annuler';
+  btn.addEventListener('click', async () => { t.remove(); await surAnnuler(); });
+  t.appendChild(texte);
+  t.appendChild(btn);
+  z.appendChild(t);
+  setTimeout(() => t.remove(), 8000);
+}
+
 /* ---------------- Événements ---------------- */
 function initEvenements(){
+  /* Accueil : cartes cliquables vers l'onglet concerné, filtré */
+  document.getElementById('vue-accueil').addEventListener('click', (ev) => {
+    const c = ev.target.closest('[data-aller]');
+    if (!c) return;
+    const vue = c.dataset.aller;
+    if (vue === 'sinistres'){
+      const f = document.getElementById('filtre-etape-sinistre');
+      f.value = 'encours';
+      f.dispatchEvent(new Event('input'));
+    } else if (vue === 'devis'){
+      const f = document.getElementById('filtre-statut-devis');
+      f.value = 'attente';
+      f.dispatchEvent(new Event('input'));
+    } else if (vue === 'stats'){
+      etat.granulariteStats = 'mois';
+      rendreStats();
+    }
+    allerVue(vue);
+  });
+
+  /* Boutons d'ajout des états vides */
+  document.addEventListener('click', (ev) => {
+    if (ev.target.dataset && ev.target.dataset.ouvre){
+      const b = document.getElementById(ev.target.dataset.ouvre);
+      if (b) b.click();
+    }
+  });
+
   /* Navigation */
   document.querySelectorAll('nav button').forEach(b => {
     b.addEventListener('click', () => {
@@ -2515,6 +2800,11 @@ function initEvenements(){
         etat.echeances = etat.echeances.filter(x => x.id !== e.id);
         await dbSupprimer('echeances', e.id);
         rendreTout();
+        toastAnnulable('Échéance supprimée.', async () => {
+          etat.echeances.push(e);
+          await dbEcrire('echeances', e);
+          rendreTout();
+        });
       }
     }
   });
@@ -2531,10 +2821,17 @@ function initEvenements(){
     } else if (cible.dataset.supprConge){
       const c = etat.conges.find(x => x.id === cible.dataset.supprConge);
       if (c && confirm('Supprimer le congé de ' + c.locataire + ' ? Les échéances liées seront aussi supprimées.')){
+        const liees = etat.echeances.filter(e => e.sourceId === c.id);
         etat.conges = etat.conges.filter(x => x.id !== c.id);
         await dbSupprimer('conges', c.id);
         await supprimerEcheancesLiees(c.id);
         rendreTout();
+        toastAnnulable('Congé de ' + c.locataire + ' supprimé.', async () => {
+          etat.conges.push(c);
+          await dbEcrire('conges', c);
+          for (const e of liees){ etat.echeances.push(e); await dbEcrire('echeances', e); }
+          rendreTout();
+        });
       }
     }
   });
@@ -2564,10 +2861,17 @@ function initEvenements(){
     } else if (cible.dataset.supprArrete){
       const a = etat.arretes.find(x => x.id === cible.dataset.supprArrete);
       if (a && confirm('Supprimer l\'arrêté de compte de ' + a.locataire + ' ? Les échéances liées seront aussi supprimées.')){
+        const liees = etat.echeances.filter(e => e.sourceId === a.id);
         etat.arretes = etat.arretes.filter(x => x.id !== a.id);
         await dbSupprimer('arretes', a.id);
         await supprimerEcheancesLiees(a.id);
         rendreTout();
+        toastAnnulable('Arrêté de compte de ' + a.locataire + ' supprimé.', async () => {
+          etat.arretes.push(a);
+          await dbEcrire('arretes', a);
+          for (const e of liees){ etat.echeances.push(e); await dbEcrire('echeances', e); }
+          rendreTout();
+        });
       }
     }
   });
@@ -2644,10 +2948,17 @@ function initEvenements(){
     } else if (cible.dataset.supprFin){
       const f = etat.finsGestion.find(x => x.id === cible.dataset.supprFin);
       if (f && confirm('Supprimer la fin de gestion de ' + f.proprietaire + ' ? Les échéances liées seront aussi supprimées.')){
+        const liees = etat.echeances.filter(e => e.sourceId === f.id);
         etat.finsGestion = etat.finsGestion.filter(x => x.id !== f.id);
         await dbSupprimer('finsGestion', f.id);
         await supprimerEcheancesLiees(f.id);
         rendreTout();
+        toastAnnulable('Fin de gestion de ' + f.proprietaire + ' supprimée.', async () => {
+          etat.finsGestion.push(f);
+          await dbEcrire('finsGestion', f);
+          for (const e of liees){ etat.echeances.push(e); await dbEcrire('echeances', e); }
+          rendreTout();
+        });
       }
     }
   });
@@ -2705,6 +3016,8 @@ function initEvenements(){
     } else if (cible.dataset.supprSinistre){
       const s = etat.sinistres.find(x => x.id === cible.dataset.supprSinistre);
       if (s && confirm('Supprimer le sinistre ' + s.reference + ' ? Les échéances liées seront supprimées, les devis rattachés seront conservés (détachés).')){
+        const liees = etat.echeances.filter(e => e.sourceId === s.id);
+        const detaches = etat.devis.filter(x => x.sinistreId === s.id).map(x => x.id);
         etat.sinistres = etat.sinistres.filter(x => x.id !== s.id);
         await dbSupprimer('sinistres', s.id);
         await supprimerEcheancesLiees(s.id);
@@ -2713,6 +3026,16 @@ function initEvenements(){
           await dbEcrire('devis', d);
         }
         rendreTout();
+        toastAnnulable('Sinistre ' + s.reference + ' supprimé.', async () => {
+          etat.sinistres.push(s);
+          await dbEcrire('sinistres', s);
+          for (const e of liees){ etat.echeances.push(e); await dbEcrire('echeances', e); }
+          for (const id of detaches){
+            const d = etat.devis.find(x => x.id === id);
+            if (d){ d.sinistreId = s.id; await dbEcrire('devis', d); }
+          }
+          rendreTout();
+        });
       }
     }
   });
@@ -2787,10 +3110,17 @@ function initEvenements(){
     } else if (cible.dataset.supprDevis){
       const d = etat.devis.find(x => x.id === cible.dataset.supprDevis);
       if (d && confirm('Supprimer le devis « ' + d.objet + ' » ? Les échéances de relance liées seront aussi supprimées.')){
+        const liees = etat.echeances.filter(e => e.sourceId === d.id);
         etat.devis = etat.devis.filter(x => x.id !== d.id);
         await dbSupprimer('devis', d.id);
         await supprimerEcheancesLiees(d.id);
         rendreTout();
+        toastAnnulable('Devis « ' + d.objet + ' » supprimé.', async () => {
+          etat.devis.push(d);
+          await dbEcrire('devis', d);
+          for (const e of liees){ etat.echeances.push(e); await dbEcrire('echeances', e); }
+          rendreTout();
+        });
       }
     }
   });
@@ -2826,10 +3156,17 @@ function initEvenements(){
       const s = etat.saisies.find(x => x.id === cible.dataset.supprSaisie);
       if (s && confirm('Supprimer « ' + LIBELLE_TYPE_SAISIE[s.type] + ' — ' + s.adresse +
                        ' » ? L\'échéance liée sera aussi supprimée et les stats recalculées.')){
+        const liees = etat.echeances.filter(e => e.sourceId === s.id);
         etat.saisies = etat.saisies.filter(x => x.id !== s.id);
         await dbSupprimer('saisies', s.id);
         await supprimerEcheancesLiees(s.id);
         rendreTout();
+        toastAnnulable('Entrée « ' + LIBELLE_TYPE_SAISIE[s.type] + ' » supprimée.', async () => {
+          etat.saisies.push(s);
+          await dbEcrire('saisies', s);
+          for (const e of liees){ etat.echeances.push(e); await dbEcrire('echeances', e); }
+          rendreTout();
+        });
       }
     }
   });
@@ -2897,6 +3234,8 @@ function initEvenements(){
     return;
   }
   initEvenements();
+  initChips();
+  initRaccourcis();
   document.getElementById('seuil-dormance').value = seuilDormance();
   rendreTout();
 })();
