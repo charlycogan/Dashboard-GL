@@ -445,6 +445,7 @@
   <div>
     <h1>Gestion locative — Mon tableau de bord</h1>
     <div class="sous-titre">Vos échéances et dossiers, en un coup d'œil. Données conservées uniquement sur ce poste.</div>
+    <div class="sous-titre" id="indicateur-auto" style="display:none"></div>
   </div>
   <div class="actions-haut">
     <button class="btn btn-blanc" id="btn-theme" title="Basculer entre mode clair et mode sombre" aria-label="Basculer le thème"><svg id="ico-lune" class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8z"/></svg><svg id="ico-soleil" class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="15" height="15" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg></button>
@@ -1403,7 +1404,33 @@
         <p class="aide" style="margin:0">Les nouveaux délais s'appliquent immédiatement aux échéances recalculées automatiquement. Les valeurs déjà validées dossier par dossier (date limite d'un arrêté, délai d'un bien digital…) ne sont pas réécrites.</p>
       </div>
       <div class="section-fiche">
-        <h4>Sauvegarde</h4>
+        <h4>Sauvegarde automatique <span class="normal">— vers un dossier synchronisé Google Drive</span></h4>
+        <p class="aide" style="margin:0 0 8px">Choisissez de préférence un dossier synchronisé par « Google Drive pour ordinateur ». L'application y réécrit automatiquement deux fichiers : <strong>gestion-locative-sauvegarde.json</strong> (restauration via « Importer ») et <strong>gestion-locative-consultation.pdf</strong>, un instantané en lecture seule à ouvrir dans l'application Google Drive de votre téléphone — il reflète l'état à la dernière sauvegarde automatique faite sur le PC. Les données ne transitent que par votre Drive personnel.</p>
+        <div id="bloc-auto-non-compatible" class="aide" style="display:none">
+          La sauvegarde automatique nécessite Chrome ou Edge sur PC : ce navigateur ne la prend pas en charge.
+          L'export manuel ci-dessous reste votre solution de sauvegarde.
+        </div>
+        <div id="bloc-auto-compatible">
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px">
+            <button type="button" class="btn" id="btn-auto-dossier">Activer la sauvegarde automatique…</button>
+            <button type="button" class="btn btn-secondaire" id="btn-auto-reprendre" style="display:none">Réactiver</button>
+            <button type="button" class="btn btn-secondaire" id="btn-auto-stop" style="display:none">Désactiver</button>
+          </div>
+          <div class="champ">
+            <label for="reg-auto-freq">Fréquence d'écriture</label>
+            <select id="reg-auto-freq">
+              <option value="0">À chaque modification (anti-rebond de quelques secondes)</option>
+              <option value="5">Toutes les 5 minutes</option>
+              <option value="15">Toutes les 15 minutes</option>
+              <option value="30">Toutes les 30 minutes</option>
+              <option value="60">Toutes les heures</option>
+            </select>
+          </div>
+          <div class="aide" id="statut-auto"></div>
+        </div>
+      </div>
+      <div class="section-fiche">
+        <h4>Sauvegarde manuelle</h4>
         <div style="display:flex; gap:8px; flex-wrap:wrap">
           <button type="button" class="btn btn-secondaire" id="reg-exporter">Exporter les données</button>
           <button type="button" class="btn btn-secondaire" id="reg-importer">Importer une sauvegarde</button>
@@ -1493,7 +1520,7 @@ function appliquerModeTheme(mode){
 appliquerModeTheme(lireModeTheme());
 
 /* ---------------- Base de données locale (IndexedDB) ---------------- */
-const NOM_DB = 'gestion-locative', VERSION_DB = 4;
+const NOM_DB = 'gestion-locative', VERSION_DB = 5;
 const MAGASINS = ['echeances', 'conges', 'arretes', 'statsEntries', 'finsGestion', 'sinistres', 'devis', 'saisies', 'locationsDigitales'];
 let db = null;
 
@@ -1506,6 +1533,8 @@ function ouvrirDB(){
         if (!d.objectStoreNames.contains(nom)) d.createObjectStore(nom, {keyPath:'id'});
       });
       if (!d.objectStoreNames.contains('meta')) d.createObjectStore('meta', {keyPath:'cle'});
+      /* magasin technique (handle du dossier de sauvegarde auto…), jamais exporté */
+      if (!d.objectStoreNames.contains('systeme')) d.createObjectStore('systeme', {keyPath:'cle'});
     };
     req.onblocked = () => {
       alert("Vos données sont encore ouvertes dans un autre onglet ou une autre fenêtre " +
@@ -1540,9 +1569,29 @@ function dbTout(magasin){
     req.onerror = () => reject(req.error);
   });
 }
-function dbEcrire(magasin, obj){ return dbOp(magasin, 'readwrite', s => s.put(obj)); }
-function dbSupprimer(magasin, id){ return dbOp(magasin, 'readwrite', s => s.delete(id)); }
-function dbVider(magasin){ return dbOp(magasin, 'readwrite', s => s.clear()); }
+function dbEcrire(magasin, obj){
+  return dbOp(magasin, 'readwrite', s => s.put(obj)).then(r => {
+    if (magasin !== 'systeme') planifierSauvegarde();
+    return r;
+  });
+}
+function dbSupprimer(magasin, id){
+  return dbOp(magasin, 'readwrite', s => s.delete(id)).then(r => {
+    if (magasin !== 'systeme') planifierSauvegarde();
+    return r;
+  });
+}
+function dbVider(magasin){
+  return dbOp(magasin, 'readwrite', s => s.clear()).then(r => {
+    if (magasin !== 'systeme') planifierSauvegarde();
+    return r;
+  });
+}
+async function systemeLire(cle){
+  const lignes = await dbTout('systeme');
+  const l = lignes.find(x => x.cle === cle);
+  return l ? l.valeur : null;
+}
 async function metaLire(cle){
   const lignes = await dbTout('meta');
   const l = lignes.find(x => x.cle === cle);
@@ -2571,10 +2620,18 @@ function rendreStats(){
 /* ---------------- Bandeau de sauvegarde ---------------- */
 function rendreBandeau(){
   const bandeau = document.getElementById('bandeau-sauvegarde');
+  /* erreur de sauvegarde automatique : message prioritaire */
+  if (sauvegardeAutoErreur){
+    document.getElementById('texte-bandeau').textContent = sauvegardeAutoErreur;
+    bandeau.classList.add('visible');
+    return;
+  }
   const aDesDonnees = etat.echeances.length || etat.conges.length ||
                       etat.arretes.length || etat.statsEntries.length;
   if (!aDesDonnees){ bandeau.classList.remove('visible'); return; }
-  const dernier = etat.meta['derniereExportation'];
+  /* la sauvegarde automatique compte comme une sauvegarde */
+  const dernier = [etat.meta['derniereExportation'], derniereSauvegardeAuto]
+    .filter(Boolean).sort().pop();
   let visible = false, texte = '';
   if (!dernier){
     visible = true;
@@ -2673,8 +2730,8 @@ function rendreTout(){
 }
 
 /* ---------------- Export / import ---------------- */
-async function exporterDonnees(){
-  const donnees = {
+function donneesExport(){
+  return {
     application: 'dashboard-gestion-locative',
     version: 2,
     exporteLe: new Date().toISOString(),
@@ -2691,6 +2748,10 @@ async function exporterDonnees(){
       meta: Object.keys(etat.meta).map(cle => ({cle, valeur: etat.meta[cle]}))
     }
   };
+}
+
+async function exporterDonnees(){
+  const donnees = donneesExport();
   const blob = new Blob([JSON.stringify(donnees, null, 2)], {type: 'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -3575,6 +3636,7 @@ function rendreReglagesOnglets(){
 
 function ouvrirReglages(){
   rendreReglagesOnglets();
+  majStatutAuto();
   document.getElementById('reg-theme').value = (function(){
     const m = lireModeTheme();
     return (m === 'clair' || m === 'sombre') ? m : 'systeme';
@@ -3607,11 +3669,307 @@ async function reinitialiserDonnees(){
   if (!confirm('Dernière confirmation : toutes les données et préférences locales seront définitivement effacées. Pensez à exporter une sauvegarde avant. Continuer ?')) return;
   for (const m of MAGASINS) await dbVider(m);
   await dbVider('meta');
+  await dbVider('systeme');
+  dossierAuto = null;
+  autorisationOk = false;
+  derniereSauvegardeAuto = null;
+  sauvegardeAutoErreur = null;
   await chargerEtat();
   document.getElementById('dlg-reglages').close();
   appliquerOnglets();
+  majStatutAuto();
   rendreTout();
   toast('Toutes les données ont été réinitialisées.');
+}
+
+/* ================= Mini-bibliothèque PDF intégrée =================
+   Génère un PDF texte A4 multi-pages (Helvetica, encodage WinAnsi pour les
+   accents français), entièrement en local : aucune dépendance, aucun réseau. */
+const PDF_CP1252 = {8364:128, 8218:130, 402:131, 8222:132, 8230:133, 8224:134, 8225:135,
+  710:136, 8240:137, 352:138, 8249:139, 338:140, 381:142, 8216:145, 8217:146, 8220:147,
+  8221:148, 8226:149, 8211:150, 8212:151, 732:152, 8482:153, 353:154, 8250:155, 339:156,
+  382:158, 376:159};
+
+function pdfTexte(t){
+  let s = '';
+  for (const ch of String(t)){
+    const c = ch.codePointAt(0);
+    if (c === 40 || c === 41 || c === 92) s += '\\' + ch;
+    else if (c < 128) s += ch;
+    else if (c >= 160 && c <= 255) s += ch;
+    else if (PDF_CP1252[c]) s += String.fromCharCode(PDF_CP1252[c]);
+    else s += '-';
+  }
+  return s;
+}
+
+function pdfCouper(texte, taille, largeur){
+  const max = Math.max(8, Math.floor(largeur / (taille * 0.52)));
+  const mots = String(texte).split(' ');
+  const lignes = [];
+  let cour = '';
+  mots.forEach(m => {
+    if ((cour + ' ' + m).trim().length > max && cour){ lignes.push(cour); cour = m; }
+    else cour = cour ? cour + ' ' + m : m;
+  });
+  if (cour) lignes.push(cour);
+  return lignes;
+}
+
+/* lignes : {texte, taille, gras, gris, retrait, avant} → Uint8Array (fichier PDF) */
+function pdfGenerer(lignes){
+  const HAUT = 802, BAS = 46, GAUCHE = 40, LARGEUR = 515;
+  const pages = [];
+  let cour = [], y = HAUT;
+  lignes.forEach(l => {
+    pdfCouper(l.texte, l.taille, LARGEUR - (l.retrait || 0)).forEach((t, i) => {
+      const esp = i === 0 ? (l.avant || 0) : 0;
+      const h = l.taille * 1.4;
+      if (y - esp - h < BAS){ pages.push(cour); cour = []; y = HAUT; }
+      else y -= esp;
+      y -= h;
+      cour.push({t, taille: l.taille, gras: !!l.gras, gris: !!l.gris, x: GAUCHE + (l.retrait || 0), y});
+    });
+  });
+  if (cour.length || !pages.length) pages.push(cour);
+
+  const objets = [];
+  objets.push('<< /Type /Catalog /Pages 2 0 R >>');
+  objets.push('<< /Type /Pages /Kids [' +
+    pages.map((p, i) => (5 + i * 2) + ' 0 R').join(' ') + '] /Count ' + pages.length + ' >>');
+  objets.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+  objets.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+  pages.forEach((p, i) => {
+    objets.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] ' +
+      '/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ' + (6 + i * 2) + ' 0 R >>');
+    const flux = p.map(l =>
+      'BT /F' + (l.gras ? 2 : 1) + ' ' + l.taille + ' Tf ' +
+      (l.gris ? '0.42 0.47 0.54 rg ' : '0.11 0.15 0.2 rg ') +
+      '1 0 0 1 ' + l.x + ' ' + l.y.toFixed(1) + ' Tm (' + pdfTexte(l.t) + ') Tj ET').join('\n');
+    objets.push('<< /Length ' + flux.length + ' >>\nstream\n' + flux + '\nendstream');
+  });
+
+  let corps = '%PDF-1.4\n';
+  const offsets = [0];
+  objets.forEach((o, i) => {
+    offsets.push(corps.length);
+    corps += (i + 1) + ' 0 obj\n' + o + '\nendobj\n';
+  });
+  const debutXref = corps.length;
+  corps += 'xref\n0 ' + (objets.length + 1) + '\n0000000000 65535 f \n';
+  for (let i = 1; i <= objets.length; i++){
+    corps += String(offsets[i]).padStart(10, '0') + ' 00000 n \n';
+  }
+  corps += 'trailer\n<< /Size ' + (objets.length + 1) + ' /Root 1 0 R >>\nstartxref\n' + debutXref + '\n%%EOF';
+  const octets = new Uint8Array(corps.length);
+  for (let i = 0; i < corps.length; i++) octets[i] = corps.charCodeAt(i) & 0xFF;
+  return octets;
+}
+
+/* PDF de consultation mobile : une colonne, lisible sur petit écran */
+function genererPdfConsultation(){
+  const L = [];
+  const aj = (texte, o) => L.push(Object.assign(
+    {texte, taille: 11, gras: false, gris: false, retrait: 0, avant: 0}, o));
+  aj('Gestion locative — consultation mobile', {taille: 17, gras: true});
+  aj('Généré le ' + fmtDate(todayStr()) + ' à ' +
+    new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}),
+    {taille: 10, gris: true, avant: 5});
+  aj("Instantané en lecture seule : reflète l'état du tableau de bord à la dernière sauvegarde automatique du PC.",
+    {taille: 9.5, gris: true, avant: 3});
+
+  const actives = etat.echeances.filter(e => e.statut === 'active')
+    .sort((a, b) => a.dateEcheance.localeCompare(b.dateEcheance));
+  aj('Échéances (' + actives.length + ')', {taille: 13.5, gras: true, avant: 18});
+  if (!actives.length) aj('Aucune échéance active.', {gris: true, avant: 5});
+  actives.forEach(e => {
+    const d = diffJours(e.dateEcheance);
+    const quand = d < 0 ? 'en retard de ' + Math.abs(d) + ' j' : d === 0 ? "aujourd'hui" : 'dans ' + d + ' j';
+    aj(fmtDate(e.dateEcheance) + ' — ' + e.titre + ' (' + quand + ')', {gras: d <= 0, avant: 6});
+    if (e.dossier) aj(e.dossier, {taille: 9.5, gris: true, retrait: 12});
+  });
+
+  grouperRecap(lignesRecap().filter(l => l.categorie !== 'Échéances en retard')).forEach(g => {
+    aj(g.categorie + ' (' + g.lignes.length + ')', {taille: 13.5, gras: true, avant: 18});
+    g.lignes.forEach(l => {
+      aj(l.nom + ' — ' + l.statut, {avant: 6});
+      aj(l.adresse + ' · ' + l.echeance, {taille: 9.5, gris: true, retrait: 12});
+    });
+  });
+  return pdfGenerer(L);
+}
+
+/* ---------------- Sauvegarde automatique (File System Access) ----------------
+   Écrit dans un dossier local choisi par l'utilisateur (idéalement synchronisé
+   par Google Drive pour ordinateur) : la sauvegarde .json et le PDF de
+   consultation. Tout reste local, aucun service externe. */
+const FICHIER_JSON_AUTO = 'gestion-locative-sauvegarde.json';
+const FICHIER_PDF_AUTO = 'gestion-locative-consultation.pdf';
+let dossierAuto = null;
+let autorisationOk = false;
+let sauvegardeAutoErreur = null;
+let derniereSauvegardeAuto = null;
+let sauvegardeDirty = false;
+let sauvegardeTimer = null;
+let sauvegardeEnCours = false;
+
+function sauvegardeAutoCompatible(){ return typeof window.showDirectoryPicker === 'function'; }
+function autoActive(){ return !!Number(etat.meta['sauvegardeAutoActive']); }
+
+function planifierSauvegarde(){
+  if (!autoActive() || !dossierAuto) return;
+  sauvegardeDirty = true;
+  if (param('sauvegardeAutoFreq', 0) === 0){
+    clearTimeout(sauvegardeTimer);
+    sauvegardeTimer = setTimeout(executerSauvegardeAuto, 4000); /* anti-rebond */
+  }
+}
+
+function ticSauvegarde(){
+  const freq = param('sauvegardeAutoFreq', 0);
+  if (freq > 0 && sauvegardeDirty && autorisationOk && autoActive() && dossierAuto){
+    const derniere = derniereSauvegardeAuto ? new Date(derniereSauvegardeAuto).getTime() : 0;
+    if (Date.now() - derniere >= freq * 60000) executerSauvegardeAuto();
+  }
+}
+
+async function executerSauvegardeAuto(){
+  if (!autoActive() || !dossierAuto || !autorisationOk || sauvegardeEnCours) return;
+  sauvegardeEnCours = true;
+  try {
+    let f = await dossierAuto.getFileHandle(FICHIER_JSON_AUTO, {create: true});
+    let w = await f.createWritable();
+    await w.write(JSON.stringify(donneesExport(), null, 2));
+    await w.close();
+    f = await dossierAuto.getFileHandle(FICHIER_PDF_AUTO, {create: true});
+    w = await f.createWritable();
+    await w.write(genererPdfConsultation());
+    await w.close();
+    sauvegardeDirty = false;
+    derniereSauvegardeAuto = new Date().toISOString();
+    await dbEcrire('systeme', {cle: 'derniereSauvegardeAuto', valeur: derniereSauvegardeAuto});
+    if (sauvegardeAutoErreur){
+      sauvegardeAutoErreur = null;
+      toast('Sauvegarde automatique rétablie.');
+    }
+  } catch (err){
+    if (!sauvegardeAutoErreur) toast('Sauvegarde automatique impossible : dossier inaccessible.');
+    sauvegardeAutoErreur = 'Sauvegarde automatique en échec : le dossier choisi est inaccessible ' +
+      '(déplacé, supprimé ou autorisation retirée). Réassignez-le dans les Réglages. ' +
+      'L\'export manuel reste disponible.';
+  }
+  sauvegardeEnCours = false;
+  majStatutAuto();
+  rendreBandeau();
+}
+
+async function choisirDossierAuto(){
+  if (!sauvegardeAutoCompatible()) return;
+  try {
+    const h = await showDirectoryPicker({mode: 'readwrite'});
+    dossierAuto = h;
+    autorisationOk = true;
+    sauvegardeAutoErreur = null;
+    await dbEcrire('systeme', {cle: 'dossierAuto', valeur: h});
+    await metaEcrire('sauvegardeAutoActive', 1);
+    toast('Sauvegarde automatique activée vers « ' + h.name + ' ».');
+    await executerSauvegardeAuto();
+  } catch (err){ /* sélection annulée */ }
+  majStatutAuto();
+  rendreBandeau();
+}
+
+async function reprendreSauvegardeAuto(){
+  if (!dossierAuto) return;
+  try {
+    const p = await dossierAuto.requestPermission({mode: 'readwrite'});
+    if (p !== 'granted'){
+      sauvegardeAutoErreur = 'Autorisation refusée pour le dossier de sauvegarde. Réassignez un dossier dans les Réglages.';
+    } else {
+      autorisationOk = true;
+      sauvegardeAutoErreur = null;
+      await metaEcrire('sauvegardeAutoActive', 1);
+      await executerSauvegardeAuto();
+    }
+  } catch (err){ /* nécessite un clic utilisateur */ }
+  majStatutAuto();
+  rendreBandeau();
+}
+
+async function desactiverSauvegardeAuto(){
+  await metaEcrire('sauvegardeAutoActive', 0);
+  sauvegardeAutoErreur = null;
+  toast('Sauvegarde automatique désactivée. L\'export manuel reste disponible.');
+  majStatutAuto();
+  rendreBandeau();
+}
+
+/* Redemande l'autorisation au premier clic de la session (geste utilisateur requis) */
+function attendreAutorisation(){
+  const unique = async () => {
+    document.removeEventListener('click', unique, true);
+    await reprendreSauvegardeAuto();
+  };
+  document.addEventListener('click', unique, true);
+}
+
+async function initSauvegardeAuto(){
+  derniereSauvegardeAuto = await systemeLire('derniereSauvegardeAuto');
+  if (sauvegardeAutoCompatible()){
+    try { dossierAuto = await systemeLire('dossierAuto'); } catch (err){ dossierAuto = null; }
+    if (dossierAuto && autoActive()){
+      try {
+        const p = await dossierAuto.queryPermission({mode: 'readwrite'});
+        if (p === 'granted') autorisationOk = true;
+        else attendreAutorisation();
+      } catch (err){ attendreAutorisation(); }
+    }
+  }
+  setInterval(ticSauvegarde, 30000);
+  majStatutAuto();
+}
+
+function majIndicateurEntete(){
+  const el = document.getElementById('indicateur-auto');
+  if (autoActive() && dossierAuto && sauvegardeAutoErreur){
+    el.style.display = '';
+    el.textContent = 'Sauvegarde auto en erreur — voir les Réglages';
+  } else if (autoActive() && dossierAuto && derniereSauvegardeAuto){
+    el.style.display = '';
+    el.textContent = 'Dernière sauvegarde auto : ' +
+      new Date(derniereSauvegardeAuto).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function majStatutAuto(){
+  const compatible = sauvegardeAutoCompatible();
+  document.getElementById('bloc-auto-non-compatible').style.display = compatible ? 'none' : '';
+  document.getElementById('bloc-auto-compatible').style.display = compatible ? '' : 'none';
+  if (compatible){
+    document.getElementById('btn-auto-dossier').textContent =
+      dossierAuto ? 'Changer de dossier…' : 'Activer la sauvegarde automatique…';
+    document.getElementById('btn-auto-stop').style.display = (dossierAuto && autoActive()) ? '' : 'none';
+    document.getElementById('btn-auto-reprendre').style.display = (dossierAuto && !autoActive()) ? '' : 'none';
+    document.getElementById('reg-auto-freq').value = String(param('sauvegardeAutoFreq', 0));
+    const st = document.getElementById('statut-auto');
+    if (!dossierAuto || !autoActive()){
+      st.textContent = 'Sauvegarde automatique désactivée.';
+    } else if (sauvegardeAutoErreur){
+      st.textContent = sauvegardeAutoErreur;
+    } else if (!autorisationOk){
+      st.textContent = 'Dossier « ' + dossierAuto.name + ' » : le navigateur redemandera l\'autorisation ' +
+        'au premier clic dans la page (une seule fois par session).';
+    } else {
+      st.textContent = 'Active — dossier « ' + dossierAuto.name + ' » — dernière sauvegarde auto : ' +
+        (derniereSauvegardeAuto
+          ? new Date(derniereSauvegardeAuto).toLocaleString('fr-FR',
+              {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})
+          : 'pas encore effectuée');
+    }
+  }
+  majIndicateurEntete();
 }
 
 /* ---------------- Chips de filtres ----------------
@@ -3804,6 +4162,15 @@ function initEvenements(){
   document.getElementById('reg-importer').addEventListener('click', () =>
     document.getElementById('fichier-import').click());
   document.getElementById('reg-reset').addEventListener('click', reinitialiserDonnees);
+
+  /* Sauvegarde automatique */
+  document.getElementById('btn-auto-dossier').addEventListener('click', choisirDossierAuto);
+  document.getElementById('btn-auto-reprendre').addEventListener('click', reprendreSauvegardeAuto);
+  document.getElementById('btn-auto-stop').addEventListener('click', desactiverSauvegardeAuto);
+  document.getElementById('reg-auto-freq').addEventListener('change', async (ev) => {
+    await metaEcrire('sauvegardeAutoFreq', Math.max(0, Number(ev.target.value) || 0));
+    majStatutAuto();
+  });
 
   /* Boutons d'ajout des états vides */
   document.addEventListener('click', (ev) => {
@@ -4418,6 +4785,7 @@ function initEvenements(){
   initChips();
   initRaccourcis();
   appliquerOnglets();
+  await initSauvegardeAuto();
   document.getElementById('seuil-dormance').value = seuilDormance();
   rendreTout();
 })();
